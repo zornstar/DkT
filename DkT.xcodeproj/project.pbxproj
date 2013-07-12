@@ -1,0 +1,320 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		95E80553178FA5FC00CA6CFA /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95E80552178FA5FC00CA6CFA /* UIKit.framework */; };
+		95E80555178FA5FC00CA6CFA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95E80554178FA5FC00CA6CFA /* Foundation.framework */; };
+		95E80557178FA5FC00CA6CFA /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95E80556178FA5FC00CA6CFA /* CoreGraphics.framework */; };
+		95E8055D178FA5FD00CA6CFA /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 95E8055B178FA5FC00CA6CFA /* InfoPlist.strings */; };
+		95E8055F178FA5FD00CA6CFA /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 95E8055E178FA5FD00CA6CFA /* main.m */; };
+		95E80563178FA5FD00CA6CFA /* DkTAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 95E80562178FA5FD00CA6CFA /* DkTAppDelegate.m */; };
+		95E80565178FA5FD00CA6CFA /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 95E80564178FA5FD00CA6CFA /* Default.png */; };
+		95E80567178FA5FD00CA6CFA /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 95E80566178FA5FD00CA6CFA /* Default@2x.png */; };
+		95E80569178FA5FD00CA6CFA /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 95E80568178FA5FD00CA6CFA /* Default-568h@2x.png */; };
+		95E8056C178FA5FD00CA6CFA /* DkTViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 95E8056B178FA5FD00CA6CFA /* DkTViewController.m */; };
+		95E8056F178FA5FE00CA6CFA /* DkTViewController_iPhone.xib in Resources */ = {isa = PBXBuildFile; fileRef = 95E8056D178FA5FE00CA6CFA /* DkTViewController_iPhone.xib */; };
+		95E80572178FA5FE00CA6CFA /* DkTViewController_iPad.xib in Resources */ = {isa = PBXBuildFile; fileRef = 95E80570178FA5FE00CA6CFA /* DkTViewController_iPad.xib */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		95E8054F178FA5FC00CA6CFA /* DkT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DkT.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		95E80552178FA5FC00CA6CFA /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		95E80554178FA5FC00CA6CFA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		95E80556178FA5FC00CA6CFA /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		95E8055A178FA5FC00CA6CFA /* DkT-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "DkT-Info.plist"; sourceTree = "<group>"; };
+		95E8055C178FA5FC00CA6CFA /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		95E8055E178FA5FD00CA6CFA /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		95E80560178FA5FD00CA6CFA /* DkT-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DkT-Prefix.pch"; sourceTree = "<group>"; };
+		95E80561178FA5FD00CA6CFA /* DkTAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DkTAppDelegate.h; sourceTree = "<group>"; };
+		95E80562178FA5FD00CA6CFA /* DkTAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DkTAppDelegate.m; sourceTree = "<group>"; };
+		95E80564178FA5FD00CA6CFA /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
+		95E80566178FA5FD00CA6CFA /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
+		95E80568178FA5FD00CA6CFA /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
+		95E8056A178FA5FD00CA6CFA /* DkTViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DkTViewController.h; sourceTree = "<group>"; };
+		95E8056B178FA5FD00CA6CFA /* DkTViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DkTViewController.m; sourceTree = "<group>"; };
+		95E8056E178FA5FE00CA6CFA /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/DkTViewController_iPhone.xib; sourceTree = "<group>"; };
+		95E80571178FA5FE00CA6CFA /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/DkTViewController_iPad.xib; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		95E8054C178FA5FB00CA6CFA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				95E80553178FA5FC00CA6CFA /* UIKit.framework in Frameworks */,
+				95E80555178FA5FC00CA6CFA /* Foundation.framework in Frameworks */,
+				95E80557178FA5FC00CA6CFA /* CoreGraphics.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		95E80546178FA5F900CA6CFA = {
+			isa = PBXGroup;
+			children = (
+				95E80558178FA5FC00CA6CFA /* DkT */,
+				95E80551178FA5FC00CA6CFA /* Frameworks */,
+				95E80550178FA5FC00CA6CFA /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		95E80550178FA5FC00CA6CFA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				95E8054F178FA5FC00CA6CFA /* DkT.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		95E80551178FA5FC00CA6CFA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				95E80552178FA5FC00CA6CFA /* UIKit.framework */,
+				95E80554178FA5FC00CA6CFA /* Foundation.framework */,
+				95E80556178FA5FC00CA6CFA /* CoreGraphics.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		95E80558178FA5FC00CA6CFA /* DkT */ = {
+			isa = PBXGroup;
+			children = (
+				95E80561178FA5FD00CA6CFA /* DkTAppDelegate.h */,
+				95E80562178FA5FD00CA6CFA /* DkTAppDelegate.m */,
+				95E8056A178FA5FD00CA6CFA /* DkTViewController.h */,
+				95E8056B178FA5FD00CA6CFA /* DkTViewController.m */,
+				95E8056D178FA5FE00CA6CFA /* DkTViewController_iPhone.xib */,
+				95E80570178FA5FE00CA6CFA /* DkTViewController_iPad.xib */,
+				95E80559178FA5FC00CA6CFA /* Supporting Files */,
+			);
+			path = DkT;
+			sourceTree = "<group>";
+		};
+		95E80559178FA5FC00CA6CFA /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				95E8055A178FA5FC00CA6CFA /* DkT-Info.plist */,
+				95E8055B178FA5FC00CA6CFA /* InfoPlist.strings */,
+				95E8055E178FA5FD00CA6CFA /* main.m */,
+				95E80560178FA5FD00CA6CFA /* DkT-Prefix.pch */,
+				95E80564178FA5FD00CA6CFA /* Default.png */,
+				95E80566178FA5FD00CA6CFA /* Default@2x.png */,
+				95E80568178FA5FD00CA6CFA /* Default-568h@2x.png */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		95E8054E178FA5FB00CA6CFA /* DkT */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 95E80575178FA5FE00CA6CFA /* Build configuration list for PBXNativeTarget "DkT" */;
+			buildPhases = (
+				95E8054B178FA5FB00CA6CFA /* Sources */,
+				95E8054C178FA5FB00CA6CFA /* Frameworks */,
+				95E8054D178FA5FB00CA6CFA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DkT;
+			productName = DkT;
+			productReference = 95E8054F178FA5FC00CA6CFA /* DkT.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		95E80547178FA5FA00CA6CFA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				CLASSPREFIX = DkT;
+				LastUpgradeCheck = 0460;
+				ORGANIZATIONNAME = "Matthew Zorn";
+			};
+			buildConfigurationList = 95E8054A178FA5FA00CA6CFA /* Build configuration list for PBXProject "DkT" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 95E80546178FA5F900CA6CFA;
+			productRefGroup = 95E80550178FA5FC00CA6CFA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				95E8054E178FA5FB00CA6CFA /* DkT */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		95E8054D178FA5FB00CA6CFA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				95E8055D178FA5FD00CA6CFA /* InfoPlist.strings in Resources */,
+				95E80565178FA5FD00CA6CFA /* Default.png in Resources */,
+				95E80567178FA5FD00CA6CFA /* Default@2x.png in Resources */,
+				95E80569178FA5FD00CA6CFA /* Default-568h@2x.png in Resources */,
+				95E8056F178FA5FE00CA6CFA /* DkTViewController_iPhone.xib in Resources */,
+				95E80572178FA5FE00CA6CFA /* DkTViewController_iPad.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		95E8054B178FA5FB00CA6CFA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				95E8055F178FA5FD00CA6CFA /* main.m in Sources */,
+				95E80563178FA5FD00CA6CFA /* DkTAppDelegate.m in Sources */,
+				95E8056C178FA5FD00CA6CFA /* DkTViewController.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		95E8055B178FA5FC00CA6CFA /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				95E8055C178FA5FC00CA6CFA /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		95E8056D178FA5FE00CA6CFA /* DkTViewController_iPhone.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				95E8056E178FA5FE00CA6CFA /* en */,
+			);
+			name = DkTViewController_iPhone.xib;
+			sourceTree = "<group>";
+		};
+		95E80570178FA5FE00CA6CFA /* DkTViewController_iPad.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				95E80571178FA5FE00CA6CFA /* en */,
+			);
+			name = DkTViewController_iPad.xib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		95E80573178FA5FE00CA6CFA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		95E80574178FA5FE00CA6CFA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		95E80576178FA5FE00CA6CFA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "DkT/DkT-Prefix.pch";
+				INFOPLIST_FILE = "DkT/DkT-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		95E80577178FA5FE00CA6CFA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "DkT/DkT-Prefix.pch";
+				INFOPLIST_FILE = "DkT/DkT-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		95E8054A178FA5FA00CA6CFA /* Build configuration list for PBXProject "DkT" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				95E80573178FA5FE00CA6CFA /* Debug */,
+				95E80574178FA5FE00CA6CFA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		95E80575178FA5FE00CA6CFA /* Build configuration list for PBXNativeTarget "DkT" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				95E80576178FA5FE00CA6CFA /* Debug */,
+				95E80577178FA5FE00CA6CFA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 95E80547178FA5FA00CA6CFA /* Project object */;
+}
