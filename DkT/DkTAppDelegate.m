@@ -1,31 +1,62 @@
 //
 //  DkTAppDelegate.m
-//  DkT
+//  DkTp
 //
-//  Created by Matthew Zorn on 7/11/13.
+//  Created by Matthew Zorn on 5/19/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
 
 #import "DkTAppDelegate.h"
-
 #import "DkTViewController.h"
+#import "DkTDocumentManager.h"
+#import "DkTRootViewController.h"
+
+#import <QuartzCore/QuartzCore.h>
+
+#import "UIImage+Utilities.h"
+#import "ZSHelpController.h"
 
 @implementation DkTAppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+    
+    [self config];
+    
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    [[UIApplication sharedApplication] setStatusBarHidden:YES];
     // Override point for customization after application launch.
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
-        self.viewController = [[DkTViewController alloc] initWithNibName:@"DkTViewController_iPhone" bundle:nil];
+        
     } else {
-        self.viewController = [[DkTViewController alloc] initWithNibName:@"DkTViewController_iPad" bundle:nil];
+        self.viewController = [[DkTRootViewController alloc] init];
     }
+    
+    //background
+    [DkTDocumentManager clearTempFiles];
+    
     self.window.rootViewController = self.viewController;
     [self.window makeKeyAndVisible];
+    
     return YES;
 }
 
+-(void) config
+{
+    [[UINavigationBar appearance] setBackgroundImage:[[UIImage alloc] init] forBarMetrics:UIBarMetricsDefault];
+    [[UINavigationBar appearance] setBackgroundColor:kActiveColor];
+    
+    [[UIToolbar appearance] setBackgroundColor:kActiveColor];
+    
+    [ZSHelpController set];
+    
+    ZSHelpController *helpController = [ZSHelpController sharedHelpController];
+    helpController.targetView =  self.viewController.view;
+    helpController.backgroundColor = kInactiveColor;
+    helpController.position = ZSTopRight;
+    helpController.icon = [kQuestionsImage imageWithColor:kActiveColor];
+    [helpController setFont:kHelpFont.fontName withColor:kActiveColor];
+}
 - (void)applicationWillResignActive:(UIApplication *)application
 {
     // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
@@ -34,7 +65,7 @@
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later. 
+    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
     // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
 }
 
@@ -52,5 +83,6 @@
 {
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
+
 
 @end

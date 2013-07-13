@@ -1,19 +1,19 @@
 //
 //  DkTAppDelegate.h
-//  DkT
+//  DkTp
 //
-//  Created by Matthew Zorn on 7/11/13.
+//  Created by Matthew Zorn on 5/19/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
 
-@class DkTViewController;
+@class DkTRootViewController;
 
 @interface DkTAppDelegate : UIResponder <UIApplicationDelegate>
 
 @property (strong, nonatomic) UIWindow *window;
 
-@property (strong, nonatomic) DkTViewController *viewController;
+@property (strong, nonatomic) DkTRootViewController *viewController;
 
 @end
