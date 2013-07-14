@@ -569,6 +569,7 @@ NSString * const PKRevealControllerRecognizesResetTapOnFrontViewKey = @"PKReveal
     self.revealPanGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self
                                                                               action:panRecognitionCallback];
     self.revealPanGestureRecognizer.delegate = self;
+    
 }
 
 - (void)setupTapGestureRecognizer
@@ -1497,4 +1498,13 @@ NS_INLINE void safelyExecuteCompletionBlockOnMainThread(PKDefaultCompletionHandl
     }
 }
 
+@end
+
+@implementation PKRevealController (DkT)
+
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
+{
+    return YES;
+}
 @end

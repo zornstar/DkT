@@ -281,3 +281,7 @@ typedef void(^PKDefaultErrorHandler)(NSError *error);
 -(NSRange) rightViewWidthRange;
 
 @end
+
+@interface PKRevealController (DkT)
+
+@end
