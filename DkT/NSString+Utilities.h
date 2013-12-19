@@ -1,8 +1,5 @@
 //
 //  NSString+Utilities.h
-//  DkTp
-//
-//  Created by Matthew Zorn on 6/23/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
 
@@ -11,5 +8,7 @@
 @interface NSString (Utilities)
 
 -(BOOL) isPDF;
+-(BOOL) isNumber;
++(NSString *) randomStringWithLength:(NSInteger)l;
 
 @end

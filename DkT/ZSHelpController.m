@@ -1,7 +1,4 @@
 //
-//  ZSHelpController.m
-//  DkTp
-//
 //  Created by Matthew Zorn on 6/29/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
@@ -10,7 +7,6 @@
 #import <objc/runtime.h>
 #import "JRSwizzle.h"
 #import <QuartzCore/QuartzCore.h>
-#import "ZSArrow.h"
 
 
 NSString *const kZSHelpTextKey = @"kZSHelpTextKey";
@@ -19,13 +15,14 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
 
 @interface ZSHelpController ()
 
-@property (nonatomic, strong) UIView *callerView;
+@property (nonatomic) unsigned hit;
 @property (nonatomic, strong) UIView *view;
 @property (nonatomic, strong) UIView *contentView;
 @property (nonatomic, strong) UILabel *contentLabel;
 @property (nonatomic, strong) UIImageView *helpImageView;
 @property (nonatomic, strong) ZSArrow *arrow;
 @property (nonatomic, strong) UIFont *font;
+@property (nonatomic) CGPoint point;
 
 @end
 
@@ -53,40 +50,45 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
 
 -(BOOL) zshc_pointInside:(CGPoint)point withEvent:(UIEvent *)event
 {
-    NSLog(@"%@",[self class]);
+    ZSHelpController *help = [ZSHelpController sharedHelpController];
     
     BOOL pointInside = [self zshc_pointInside:point withEvent:event];
     
-    if(pointInside && [[ZSHelpController sharedHelpController] enabled])
+    if(help.enabled  && pointInside && (help.hit == 0))
     {
-        if(self.attributedHelpText.length > 0)
-        {
-            
-            UIView *targetView = [UIApplication sharedApplication].keyWindow;
-            
-            [[ZSHelpController sharedHelpController] setTargetView:targetView];
-            [[ZSHelpController sharedHelpController] setCallerView:self];
-            
-            CGPoint origin = [targetView convertPoint:point fromView:self];
-            [ZSHelpController showAtPoint:origin withAttributedText:self.attributedHelpText];
-
-        }
         
-        else if (self.helpText.length > 0)
+        if( (self.attributedHelpText.length > 0) || (self.helpText.length > 0) )
         {
+            
             UIView *targetView = [UIApplication sharedApplication].keyWindow;
             
-            [[ZSHelpController sharedHelpController] setTargetView:targetView];
-            [[ZSHelpController sharedHelpController] setCallerView:self];
+            help.targetView = targetView;
+            help.callerView = self;
+            CGPoint origin;
             
-            CGPoint origin = [targetView convertPoint:point fromView:self];
-            [ZSHelpController showAtPoint:origin withText:self.helpText];
+            if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+                origin = [targetView convertPoint:point fromView:self];
+            else
+            {
+                CGPoint pt = [targetView convertPoint:point fromView:self];
+                CGSize screenSize = [[UIScreen mainScreen] bounds].size;
+                CGFloat x = (pt.x > screenSize.width/2.) ? screenSize.width : 0;
+                CGFloat y = (pt.y > screenSize.width/4.) ? 0 : screenSize.width/2.;
+                
+                origin = CGPointMake(x, y); 
+            }
+            
+            if(self.attributedHelpText.length > 0) [ZSHelpController showAtPoint:origin withAttributedText:self.attributedHelpText];
+            
+            else [ZSHelpController showAtPoint:origin withText:self.helpText];
+            
         }
         
     }
     
-    else if([[ZSHelpController sharedHelpController] callerView]) [ZSHelpController hide];
-    
+    else if(/*[[ZSHelpController sharedHelpController] callerView] &&*/ (help.hit == 1)) [ZSHelpController hide];
+   
+    else if(pointInside && (self == help.callerView) ) [ZSHelpController hide];
     return pointInside;
     
 }
@@ -98,7 +100,7 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
 -(void) touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
     [super touchesBegan:touches withEvent:event];
-    [ZSHelpController hide];
+    //[ZSHelpController hide];
 }
 
 @end
@@ -108,12 +110,12 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
 #define LABEL_WIDTH 250
 
 #define MARGIN LABEL_WIDTH * 1/40
-#define ARROW_WIDTH LABEL_WIDTH * 1/20
+#define SEPARATOR LABEL_WIDTH * 1/15
 #define FONT_SIZE LABEL_WIDTH * 1/20.
 
 #define HELP_IMAGE_FRAME CGRectMake(MARGIN, MARGIN, MIN(32,self.contentLabel.frame.size.height), MIN(32,self.contentLabel.frame.size.height))
 
-#define ARROW_FRAME CGRectMake((self.position %2 == 0) ? CGRectGetMaxX(self.contentView.frame) - ARROW_WIDTH*.45 : ARROW_WIDTH*.55, (self.position < 2) ? CGRectGetMaxY(self.contentView.frame) - ARROW_WIDTH*.55 : ARROW_WIDTH*.45, ARROW_WIDTH, ARROW_WIDTH)
+#define ARROW_FRAME CGRectMake((self.position %2 == 0) ? CGRectGetMaxX(self.contentView.frame) - ARROW_WIDTH*.8 : ARROW_WIDTH*.55, (self.position < 2) ? CGRectGetMaxY(self.contentView.frame) - ARROW_WIDTH*.55 : ARROW_WIDTH*.60, ARROW_WIDTH, ARROW_WIDTH)
 
 
 @implementation ZSHelpController
@@ -205,12 +207,20 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
     return visible;
 }
 
+-(CGRect) frameInTargetView
+{
+    if([ZSHelpController isVisible]) return self.view.frame;
+
+    else return CGRectZero;
+}
+
 -(id) init
 {
     if(self = [super init])
     {
         self.size = DEFAULT_SIZE;
         self.position = ZSCenter;
+        self.hit = 0;
     }
     
     return self;
@@ -288,10 +298,19 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
 
 -(void) show
 {
+    if([self.view superview]) return;
+    
     self.position = [self autoPosition];
-   
     [self layoutSubviews];
     [self.targetView addSubview:self.view];
+    
+    self.view.alpha = 0.;
+
+    [UIView animateWithDuration:.1 delay:0 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+        self.view.alpha = 1.;
+    } completion:^(BOOL finished) {
+        self.hit++;
+    }];
 
 }
 
@@ -310,8 +329,8 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
 {
     CGRect frame = CGRectZero;
     
-    CGFloat width = self.contentView.frame.size.width + ARROW_WIDTH;
-    CGFloat height = self.contentView.frame.size.height + ARROW_WIDTH;
+    CGFloat width = self.contentView.frame.size.width + SEPARATOR;
+    CGFloat height = self.contentView.frame.size.height + SEPARATOR;
     
     switch (self.position) {
         case ZSTopLeft:
@@ -346,28 +365,100 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
     
     frame.origin = CGPointMake(CGRectGetMaxX(self.helpImageView.frame) + MARGIN, MARGIN); self.contentLabel.frame = frame;
     
-    self.contentView.frame = CGRectMake( (self.position % 2) == 0 ? 0 : ARROW_WIDTH, (self.position < 2) ? 0 : ARROW_WIDTH, self.helpImageView.frame.size.width + self.contentLabel.frame.size.width + MARGIN * 3, self.contentLabel.frame.size.height + MARGIN * 2);
+    self.contentView.frame = CGRectMake( (self.position % 2) == 0 ? 0 : SEPARATOR, (self.position < 2) ? 0 : SEPARATOR, self.helpImageView.frame.size.width + self.contentLabel.frame.size.width + MARGIN * 3, self.contentLabel.frame.size.height + MARGIN * 2);
     
-    self.arrow = [ZSArrow arrowWithFrame:ARROW_FRAME direction:M_PI+M_PI_4+(self.position-1)*M_PI_4
-                                   color:self.contentView.backgroundColor];
     self.view.frame = [self frame];
     
     [self.contentView addSubview:self.contentLabel];
     [self.contentView addSubview:self.helpImageView];
     [self.view addSubview:self.contentView];
-    [self.view addSubview:self.arrow];
+    //[self.view addSubview:self.arrow];
+    
 }
 
 -(void) dismiss:(id)sender
 {
     if(self.view.superview)
     {
-        [self.view removeFromSuperview];
-        [self.arrow removeFromSuperview];
-        [self.contentView removeFromSuperview];
+        [UIView animateWithDuration:.3 delay:0 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+            [self.view removeFromSuperview];
+            //[self.arrow removeFromSuperview];
+            [self.contentView removeFromSuperview];
+        } completion:^(BOOL finished) {
+            self.hit = 0;
+            self.view = nil;
+        }];
+        
     }
     
     self.contentLabel.text = nil;
 }
+
 @end
+
+@interface ZSArrow ()
+
+@property (nonatomic) double direction;
+@property (nonatomic, strong) UIColor *color;
+
+@end
+
+@implementation ZSArrow
+
+- (id)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+        self.layer.borderColor = [UIColor clearColor].CGColor;
+    }
+    return self;
+}
+
+
+- (void)drawRect:(CGRect)rect
+{
+    
+    [super drawRect:rect];
+    
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    
+    
+    CGPoint points[3] = { CGPointMake(0, self.frame.size.height), CGPointMake(self.frame.size.width/2., 0), CGPointMake(self.frame.size.width, self.frame.size.height) };
+    
+    
+    CGContextBeginPath(ctx);
+    CGContextMoveToPoint(ctx, points[0].x, points[0].y);
+    CGContextAddLineToPoint(ctx, points[1].x, points[1].y);
+    CGContextAddLineToPoint(ctx, points[2].x, points[2].y);
+    CGContextAddLineToPoint(ctx, points[0].x, points[0].y);
+    CGContextSetFillColorWithColor(ctx, self.color.CGColor);
+    CGContextFillPath(ctx);
+    
+    CGContextBeginPath(ctx);
+    CGContextMoveToPoint(ctx, points[0].x, points[0].y);
+    CGContextAddLineToPoint(ctx, points[1].x, points[1].y);
+    CGContextAddLineToPoint(ctx, points[2].x, points[2].y);
+    
+    CGContextSetLineWidth(ctx, self.layer.borderWidth);
+    CGContextSetStrokeColorWithColor(ctx, self.layer.borderColor);
+    CGContextSetFillColorWithColor(ctx, [UIColor clearColor].CGColor);
+    CGContextStrokePath(ctx);
+    
+    self.layer.borderWidth = 0.0;
+    
+    self.transform = CGAffineTransformMakeRotation(self.direction);
+    
+    
+}
+
++(ZSArrow *) arrowWithFrame:(CGRect)frame direction:(double)direction color:(UIColor *)color
+{
+    ZSArrow *arrow = [[ZSArrow alloc] initWithFrame:frame];
+    arrow.direction = direction;
+    arrow.color = color;
+    return arrow;
+}
+@end
+
 

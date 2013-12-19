@@ -9,16 +9,18 @@
 #import <UIKit/UIKit.h>
 #import <MessageUI/MessageUI.h>
 #import "DkTDocketTableViewController.h"
+#import "DkTDocumentManager.h"
 
 @class DkTDocketEntry;
 
-@interface DkTDetailViewController : UIViewController <UISplitViewControllerDelegate, MFMailComposeViewControllerDelegate>
+@interface DkTDetailViewController : UIViewController <UISplitViewControllerDelegate, MFMailComposeViewControllerDelegate, UIPopoverControllerDelegate>
 
 @property (nonatomic, weak) DkTDocketEntry *docketEntry;
 @property (nonatomic, copy) NSString *filePath;
+@property (nonatomic, strong) DkTFile *file;
 @property (nonatomic, weak) DkTDocketTableViewController *masterViewController;
 @property (nonatomic, strong) DkTDocket *docket;
-@property (nonatomic) BOOL isLocal;
+@property (nonatomic, strong) UIButton *docketButton;
 
 -(void) toggleButtonVisibility;
 

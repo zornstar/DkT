@@ -276,7 +276,7 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
   } else {
     theClass = [GDataXMLNode class];
   }
-  return [[[theClass alloc] initConsumingXMLNode:theXMLNode] autorelease];
+  return [[theClass alloc] initConsumingXMLNode:theXMLNode];
 }
 
 - (id)initConsumingXMLNode:(xmlNodePtr)theXMLNode {
@@ -296,7 +296,7 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
     theClass = [GDataXMLNode class];
   }
 
-  return [[[theClass alloc] initBorrowingXMLNode:theXMLNode] autorelease];
+  return [[theClass alloc] initBorrowingXMLNode:theXMLNode];
 }
 
 - (id)initBorrowingXMLNode:(xmlNodePtr)theXMLNode {
@@ -310,13 +310,10 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
 
 - (void)releaseCachedValues {
 
-  [cachedName_ release];
   cachedName_ = nil;
 
-  [cachedChildren_ release];
   cachedChildren_ = nil;
 
-  [cachedAttributes_ release];
   cachedAttributes_ = nil;
 }
 
@@ -368,7 +365,7 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
   result = [NSString stringWithUTF8String:(const char *) chars];
   if (cacheDict) {
     // save the string in the document's string cache
-    CFDictionarySetValue(cacheDict, chars, result);
+    CFDictionarySetValue(cacheDict, chars, (__bridge const void *)(result));
   }
 
   return result;
@@ -378,11 +375,9 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
 
   if (xmlNode_ && shouldFreeXMLNode_) {
     xmlFreeNode(xmlNode_);
-    xmlNode_ = NULL;
   }
 
   [self releaseCachedValues];
-  [super dealloc];
 }
 
 #pragma mark -
@@ -448,14 +443,14 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
 
       xmlDocPtr doc = NULL;
       int level = 0;
-      int format = 0;
+      int format = 1;
 
       int result = xmlNodeDump(buff, doc, xmlNode_, level, format);
 
       if (result > -1) {
-        str = [[[NSString alloc] initWithBytes:(xmlBufferContent(buff))
+        str = [[NSString alloc] initWithBytes:(xmlBufferContent(buff))
                                         length:(xmlBufferLength(buff))
-                                      encoding:NSUTF8StringEncoding] autorelease];
+                                      encoding:NSUTF8StringEncoding];
       }
       xmlBufferFree(buff);
     }
@@ -557,7 +552,7 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
 
   NSString *str = [self qualifiedName];
 
-  cachedName_ = [str retain];
+  cachedName_ = str;
 
   return str;
 }
@@ -636,7 +631,7 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
       currChild = currChild->next;
     }
 
-    cachedChildren_ = [array retain];
+    cachedChildren_ = array;
   }
   return array;
 }
@@ -767,10 +762,6 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
 
             int result = xmlXPathRegisterNs(xpathCtx, prefix, nsPtr->href);
             if (result != 0) {
-#if DEBUG
-              NSCAssert1(result == 0, @"GDataXMLNode XPath namespace %@ issue",
-                        prefix);
-#endif
             }
           }
         }
@@ -861,7 +852,7 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
 }
 
 - (NSUInteger)hash {
-  return (NSUInteger) (void *) [GDataXMLNode class];
+  return (NSUInteger) (__bridge void *) [GDataXMLNode class];
 }
 
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)selector {
@@ -919,7 +910,6 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
       xmlNodePtr root = xmlDocGetRootElement(doc);
       if (root) {
         xmlNode_ = xmlCopyNode(root, 1); // 1: recursive
-        shouldFreeXMLNode_ = YES;
       }
       xmlFreeDoc(doc);
     }
@@ -932,7 +922,6 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
                                      code:-1
                                  userInfo:nil];
       }
-      [self release];
       return nil;
     }
   }
@@ -979,10 +968,10 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
 
     // add a namespace for each object in the array
     NSEnumerator *enumerator = [namespaces objectEnumerator];
-    GDataXMLNode *namespaceNode;
-    while ((namespaceNode = [enumerator nextObject]) != nil) {
+    GDataXMLNode *namespace;
+    while ((namespace = [enumerator nextObject]) != nil) {
 
-      xmlNsPtr ns = (xmlNsPtr) [namespaceNode XMLNode];
+      xmlNsPtr ns = (xmlNsPtr) [namespace XMLNode];
       if (ns) {
         (void)xmlNewNs(xmlNode_, ns->href, ns->prefix);
       }
@@ -1214,7 +1203,7 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
       prop = prop->next;
     }
 
-    cachedAttributes_ = [array retain];
+    cachedAttributes_ = array;
   }
   return array;
 }
@@ -1519,7 +1508,7 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
     NSValue *replacementNS = [nsMap objectForKey:currNS];
 
     if (replacementNS != nil) {
-      xmlNsPtr replaceNSPtr = (xmlNsPtr)[replacementNS pointerValue];
+      xmlNsPtr replaceNSPtr = [replacementNS pointerValue];
 
       xmlSetNs(nodeToFix, replaceNSPtr);
     }
@@ -1618,7 +1607,7 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
     const char *encoding = NULL;
 
     // NOTE: We are assuming [data length] fits into an int.
-    xmlDoc_ = xmlReadMemory((const char*)[data bytes], (int)[data length], baseURL, encoding,
+    xmlDoc_ = xmlReadMemory([data bytes], (int)[data length], baseURL, encoding,
                             kGDataXMLParseOptions); // TODO(grobbins) map option values
     if (xmlDoc_ == NULL) {
       if (error) {
@@ -1627,7 +1616,6 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
                                 userInfo:nil];
         // TODO(grobbins) use xmlSetGenericErrorFunc to capture error
       }
-      [self release];
       return nil;
     } else {
       if (error) *error = NULL;
@@ -1701,7 +1689,6 @@ static xmlChar *SplitQNameReverse(const xmlChar *qname, xmlChar **prefix) {
 
     xmlFreeDoc(xmlDoc_);
   }
-  [super dealloc];
 }
 
 #pragma mark -

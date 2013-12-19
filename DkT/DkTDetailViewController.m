@@ -12,90 +12,145 @@
 #import "DkTDocketEntry.h"
 #import "UIImage+Utilities.h"
 #import "DkTDocumentManager.h"
+#import "PKRevealController.h"
+#import "DkTImageCache.h"
+
 
 @interface DkTDetailViewController ()
 {
-    UIButton *_docketButton;
-    UIBarButtonItem *_mailBarButtonItem;
-    UIBarButtonItem *_saveBarButtonItem;
-    UIBarButtonItem *_backBarButtonItem;
-    UIBarButtonItem *_space;
+    
 }
 
+@property (strong, nonatomic) UIBarButtonItem *mailBarButtonItem;
+@property (strong, nonatomic) UIBarButtonItem *saveBarButtonItem;
+@property (strong, nonatomic) UIBarButtonItem *backBarButtonItem;
+@property (strong, nonatomic) UIBarButtonItem *actionBarButtonItem;
+@property (strong, nonatomic) UIBarButtonItem *space;
+@property (strong, nonatomic) UIPopoverController *actionPopoverController;
+@property (strong, nonatomic) UIActivityViewController *activityController;
 @property (strong, nonatomic) UIPopoverController *masterPopoverController;
+@property (nonatomic, readonly, getter = hasAppeared) BOOL appeared;
 
 @end
 
 @implementation DkTDetailViewController
 
-- (id)init
-{
-    if(self = [super init])
-    {
-        _isLocal = FALSE;
-    }
-    
-    return self;
-}
 
 -(void) viewDidLoad
 {
-    self.view.backgroundColor = kInactiveColor;
-    UIImage *backImage = [[UIImage imageNamed:@"flipArrow"] imageWithColor:kInactiveColor];
-    UIImage *saveImage = [[UIImage imageNamed:@"documentAdd"] imageWithColor:kInactiveColor];
-    UIImage *mailImage = [[UIImage imageNamed:@"mail"] imageWithColor:kInactiveColor];
+    self.view.backgroundColor = [UIColor inactiveColor];
+    self.contentSizeForViewInPopover = CGSizeMake(150, 140);
     
+    UIImage *saveImage = [[DkTImageCache sharedCache] imageNamed:@"documentAdd" color:[UIColor inactiveColor]];
+    UIImage *mailImage = [[DkTImageCache sharedCache] imageNamed:@"mail" color:[UIColor inactiveColor]];
+    UIImage *actionImage = [[DkTImageCache sharedCache] imageNamed:@"action" color:[UIColor inactiveColor]];
     
-    CGRect bbFrame = CGRectMake(0,0,kToolbarIconSize.width,kToolbarIconSize.height);
+    CGFloat hw = PAD_OR_POD(30, 25);
     
-    UIButton *backButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    backButton.frame = bbFrame;
-    [backButton setBackgroundImage:backImage forState:UIControlStateNormal];
-    [backButton addTarget:self action:@selector(dismiss) forControlEvents:UIControlEventTouchUpInside];
-    _backBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:backButton];
+    CGRect bbFrame = CGRectMake(0,0,hw,hw);
     
     UIButton *mailButton = [UIButton buttonWithType:UIButtonTypeCustom];
     mailButton.frame = bbFrame;
     [mailButton setBackgroundImage:mailImage forState:UIControlStateNormal];
     [mailButton addTarget:self action:@selector(mail) forControlEvents:UIControlEventTouchUpInside];
-    _mailBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:mailButton];
+    mailButton.helpText = @"E-mail the document.";
+    self.mailBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:mailButton];
     
     UIButton *saveButton = [UIButton buttonWithType:UIButtonTypeCustom];
     saveButton.frame = bbFrame;
     [saveButton setBackgroundImage:saveImage forState:UIControlStateNormal];
     [saveButton addTarget:self action:@selector(save) forControlEvents:UIControlEventTouchUpInside];
-    _saveBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:saveButton];
+    saveButton.helpText = @"Save the document.";
+    self.saveBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:saveButton];
     
-    _space = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
-    _space.width = kToolbarIconSize.width;
     
-    self.navigationItem.rightBarButtonItems = @[_backBarButtonItem];
+    UIButton *actionButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    actionButton.frame = CGRectMake(0, 0, hw, hw/1.2);
+    [actionButton setBackgroundImage:actionImage forState:UIControlStateNormal];
+    [actionButton addTarget:self action:@selector(action:) forControlEvents:UIControlEventTouchUpInside];
+    self.actionBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:actionButton];
     
-    UIImage *docket = [[UIImage imageNamed:@"docket"] imageWithColor:kInactiveColor];
+    self.space = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+    self.space.width = PAD_OR_POD(kToolbarIconSize.width, kToolbarIconSize.width/2.5);
+    
+    
+    UIImage *docket = [[DkTImageCache sharedCache] imageNamed:@"back" color:[UIColor inactiveColor]];
     UIButton *docketButton = [UIButton buttonWithType:UIButtonTypeCustom];
     docketButton.frame = bbFrame;
     [docketButton setBackgroundImage:docket forState:UIControlStateNormal];
-    _docketButton = docketButton;
+    self.docketButton = docketButton;
     
+    [self toggleButtonVisibility];
+}
+
+-(void) setTitle:(NSString *)title
+{
+    [super setTitle:title];
     self.navigationItem.titleView = [self titleLabel];
+}
+
+-(void) viewWillAppear:(BOOL)animated
+{
+    [self toggleButtonVisibility];
+    
+    if(!self.file)
+    {
+        if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+        {
+            [self.docketButton addTarget:[self splitViewController] action:@selector(toggleMasterVisible:) forControlEvents:UIControlEventTouchUpInside];
+        }
+        
+        else
+        {
+            [self.docketButton addTarget:self action:@selector(revealPanel:) forControlEvents:UIControlEventTouchUpInside];
+        }
+    }
+    
+    else
+    {
+        [self.docketButton addTarget:self action:@selector(dismiss) forControlEvents:UIControlEventTouchUpInside];
+    }
+    
+    if(self.file || UIInterfaceOrientationIsPortrait([[UIApplication sharedApplication] statusBarOrientation]))
+    {
+        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:_docketButton];
+    }
     
 }
 
+-(void) viewDidAppear:(BOOL)animated
+{
+    if(!self.hasAppeared)
+    {
+        if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) [self revealPanel:nil];
+        
+        else if (UIInterfaceOrientationIsPortrait([[UIApplication sharedApplication] statusBarOrientation])){
+            [self.splitViewController performSelector:@selector(toggleMasterVisible:)];
+        }
+    }
+    _appeared = YES;
+}
 -(void) toggleButtonVisibility
 {
-    if(self.isLocal)
+    NSMutableArray *buttons =  [NSMutableArray array];
+    
+    if(self.filePath != nil)
     {
-        self.navigationItem.rightBarButtonItems =  @[_backBarButtonItem, _space, _mailBarButtonItem];
+        if([[PACERClient sharedClient] networkReachabilityStatus] != AFNetworkReachabilityStatusNotReachable)
+        {
+            [buttons addObjectsFromArray:@[self.mailBarButtonItem, self.space]];
+        }
+        if(!self.file)
+        {
+            [buttons addObjectsFromArray:@[self.saveBarButtonItem, self.space]];
+        }
+        
+        [buttons addObjectsFromArray:@[self.actionBarButtonItem]];
+        
     }
     
-    else if (self.filePath.length > 0) {
-        self.navigationItem.rightBarButtonItems =  @[_backBarButtonItem, _space, _saveBarButtonItem, _space, _mailBarButtonItem];
-    }
-    
-    else {
-        self.navigationItem.rightBarButtonItems = @[_backBarButtonItem];
-    }
-    
+     
+    self.navigationItem.rightBarButtonItems = buttons;
 
 }
 
@@ -104,40 +159,21 @@
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectZero];
     label.text = self.title;
     label.numberOfLines = 2;
-    label.textColor = kInactiveColor;
+    label.textColor = [UIColor inactiveColor];
     label.font = [UIFont fontWithName:kMainFont size:13];
     label.textAlignment = NSTextAlignmentCenter;
     label.backgroundColor = [UIColor clearColor];
+    label.adjustsFontSizeToFitWidth = YES;
+    label.minimumScaleFactor = .8;
     [label sizeToFit];
+    
+    
     return label;
-}
-
-
-- (void)setDetailItem:(id)newDetailItem
-{
-    
-    [self configureView];
-    
-    
-    if (self.masterPopoverController != nil) {
-        [self.masterPopoverController dismissPopoverAnimated:YES];
-    }
-}
-
--(void) configureView
-{
-    
 }
 
 
 -(void) dismiss
 {
-    if(!self.isLocal)
-    [self.parentViewController.parentViewController.presentingViewController dismissViewControllerAnimated:YES completion:^{
-        
-    }];
-    
-    else
     [self.navigationController.presentingViewController dismissViewControllerAnimated:YES completion:^{
         
     }];
@@ -151,7 +187,14 @@
 
 -(void) save
 {
-    [DkTDocumentManager saveDocumentAtTempPath:self.filePath toSavedDocket:self.docket];
+    [DkTDocumentManager saveDocketEntry:self.docketEntry atTempPath:self.filePath];
+}
+
+-(void) revealPanel:(id)sender
+{
+    [self.navigationController.revealController showViewController:self.navigationController.revealController.leftViewController animated:YES completion:^(BOOL finished) {
+        
+    }];
 }
 
 -(void) mail
@@ -159,11 +202,46 @@
     if([MFMailComposeViewController canSendMail])
     {
         MFMailComposeViewController *mailVC = [[MFMailComposeViewController alloc] init];
-        [mailVC setSubject:[NSString stringWithFormat:@"%@ (%d)", self.title, self.docketEntry.entry]];
-        [mailVC setMessageBody:[NSString stringWithFormat:@"%@ - Docket Entry %d", self.title, self.docketEntry.entry] isHTML:NO];
         
-        NSData *data = [NSData dataWithContentsOfFile:self.filePath];
-        [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:[NSString stringWithFormat:@"%d - %@", self.docketEntry.entry, self.title]];
+        NSString *subject;
+        
+        if (self.file)
+        {
+            self.filePath = [self.file objectForKey:DkTFilePathKey];
+            NSString *docketName = [[self.filePath stringByDeletingLastPathComponent] lastPathComponent];
+            docketName = decodeFromPercentEscapeString(docketName);
+            subject = [NSString stringWithFormat:@"%@ - %@", docketName, [[self.file objectForKey:DkTFilePathKey] lastPathComponent]];
+            [mailVC setMessageBody:[self.file objectForKey:DkTFileSummaryKey] isHTML:NO];
+            NSData *data = [NSData dataWithContentsOfFile:self.filePath];
+            [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:[NSString stringWithFormat:@"%@", [[self.file objectForKey:DkTFilePathKey] lastPathComponent]]];
+            
+        }
+        
+        else
+        {
+            subject = [NSString stringWithFormat:@"%@", self.title];
+            [mailVC setMessageBody:self.docketEntry.summary isHTML:YES];
+            NSData *data = [NSData dataWithContentsOfFile:self.filePath];
+            [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:[NSString stringWithFormat:@"%d - %@.pdf", self.docketEntry.entryNumber.intValue, self.title]];
+        }
+        
+        [mailVC setSubject:subject];
+        
+        [mailVC.navigationBar setTitleTextAttributes:@{UITextAttributeTextColor:[UIColor inactiveColor]}];
+        [mailVC.navigationBar setTintColor:[UIColor inactiveColor]];
+        
+        
+        
+        
+        for(UINavigationItem *i in mailVC.navigationBar.items)
+        {
+            
+            IOS7([i.leftBarButtonItem setTintColor:[UIColor whiteColor]];
+                 [i.rightBarButtonItem setTintColor:[UIColor whiteColor]];
+                 [i.backBarButtonItem setTintColor:[UIColor whiteColor]];, )
+            
+        }
+        
         mailVC.mailComposeDelegate = self;
         
         [self presentViewController:mailVC animated:YES completion:^{
@@ -184,20 +262,19 @@
 - (void)splitViewController:(UISplitViewController *)splitController willHideViewController:(UIViewController *)viewController withBarButtonItem:(UIBarButtonItem *)barButtonItem forPopoverController:(UIPopoverController *)popoverController
 {
     
-    [_docketButton addTarget:barButtonItem.target action:barButtonItem.action forControlEvents:UIControlEventTouchUpInside];
-     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:_docketButton];
-    
-   self.masterPopoverController = popoverController;
-    
+    if(!self.file) {
+        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:_docketButton];
+    }
     
     
+   _masterPopoverController = popoverController;
 }
 
 - (void)splitViewController:(UISplitViewController *)splitController willShowViewController:(UIViewController *)viewController invalidatingBarButtonItem:(UIBarButtonItem *)barButtonItem
 {
     
-    
-    self.masterPopoverController = nil;
+    self.navigationItem.leftBarButtonItem = nil;
+    _masterPopoverController = nil;
 }
 
 -(BOOL) splitViewController:(UISplitViewController *)svc shouldHideViewController:(UIViewController *)vc inOrientation:(UIInterfaceOrientation)orientation
@@ -218,6 +295,94 @@
     [self toggleButtonVisibility];
 }
 
+-(UIActivityViewController *) activityController
+{
+    
+    __weak DkTDetailViewController *weakSelf = self;
+    
+    if(_activityController == nil)
+    {
+            NSURL *url = [NSURL fileURLWithPath:self.filePath];
+            NSArray *data = @[url];
+            UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:data
+                                                                                     applicationActivities:nil];
+        
+        
+        
+        NSMutableArray *excludedActivities = [@[UIActivityTypeAssignToContact, UIActivityTypePostToFacebook, UIActivityTypePostToTwitter,UIActivityTypePostToWeibo, UIActivityTypeSaveToCameraRoll, UIActivityTypeMail] mutableCopy];
+        
+        IOS7([excludedActivities addObject:UIActivityTypeAddToReadingList];, );
+        IOS7([excludedActivities addObject:UIActivityTypePostToVimeo];, );
+        IOS7([excludedActivities addObject:UIActivityTypePostToFlickr];, );
+        IOS7([excludedActivities addObject:UIActivityTypePostToTencentWeibo];, );
+        
+        
+        if(![UIPrintInteractionController canPrintURL:url]) [excludedActivities addObject:UIActivityTypePrint];
+       
+        activityVC.excludedActivityTypes = excludedActivities;
+        
+        
+        activityVC.completionHandler = ^(NSString *activityType, BOOL completed) {
+            
+          // if(activityType == UIActivityTypePrint) [self print];
+            
+            if(activityType == UIActivityTypeMail) [weakSelf mail];
+    
+        };
+        
+        _activityController = activityVC;
+        
+        
+    }
+    
+    return _activityController;
+}
 
+-(UIPopoverController *) actionPopoverController
+{
+    if(_actionPopoverController == nil)
+    {
+        _actionPopoverController = [[UIPopoverController alloc] initWithContentViewController:self.activityController];
+        _actionPopoverController.delegate = self;
+    }
+    
+    return _actionPopoverController;
+}
+-(void) action:(id)sender
+{
+    if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+    {
+        if (_actionPopoverController == nil) {
+            //The color picker popover is not showing. Show it.
+            [self.actionPopoverController presentPopoverFromBarButtonItem:[self.navigationItem.rightBarButtonItems lastObject]
+                                                 permittedArrowDirections:UIPopoverArrowDirectionUp animated:YES];
+        } else {
+            [self.actionPopoverController dismissPopoverAnimated:YES];
+        }
+    }
+    
+    else
+    {
+        [self presentViewController:self.activityController animated:YES completion:nil];
+    }
+    
+    
+}
+
+-(void) popoverControllerDidDismissPopover:(UIPopoverController *)popoverController
+{
+    if(popoverController == self.actionPopoverController) self.actionPopoverController = nil;
+}
+
+-(void)viewWillDisappear:(BOOL)animated
+{
+    if(_actionPopoverController) [self.actionPopoverController dismissPopoverAnimated:YES];
+    
+    if([self.masterPopoverController isPopoverVisible])
+    {
+        [self.splitViewController performSelector:@selector(toggleMasterVisible:)];
+        self.masterPopoverController = nil;
+    }
+}
 
 @end

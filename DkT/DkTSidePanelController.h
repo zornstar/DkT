@@ -14,7 +14,6 @@
 @class DkTSettingsViewController;
 
 
-
 @interface DkTSidePanelController : UIViewController
 
 @property (nonatomic, strong) DkTLoginViewController *loginViewController;

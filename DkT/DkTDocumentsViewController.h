@@ -8,8 +8,9 @@
 
 #import <UIKit/UIKit.h>
 #import "DkTDocumentManager.h"
+#import <MessageUI/MessageUI.h>
 
-@interface DkTDocumentsViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, DkTDocumentManagerDelegate>
+@interface DkTDocumentsViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, DkTDocumentManagerDelegate, UIDocumentInteractionControllerDelegate, MFMailComposeViewControllerDelegate>
 
 @property (nonatomic, strong) UITableView *tableView;
 

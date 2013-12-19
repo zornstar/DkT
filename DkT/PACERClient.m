@@ -10,6 +10,9 @@
 #import "PACERClient.h"
 #import "RECAPClient.h"
 
+#import "DkTAlertView.h"
+
+#import "DkTSettings.h"
 #import "DkTSession.h"
 #import "DkTSessionManager.h"
 #import "DkTUser.h"
@@ -18,21 +21,32 @@
 #import "DkTDocketEntry.h"
 #import "AFDownloadRequestOperation.h"
 #import "MBProgressHUD.h"
+#import "NSString+Utilities.h"
 
 #define kLoginURL @"https://pacer.login.uscourts.gov/cgi-bin/check-pacer-passwd.pl"
 #define kBaseURL @"https://pcl.uscourts.gov/"
 #define kSearchURL @"https://pcl.uscourts.gov/dquery"
-#define kViewPath @"view"
 
+NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&dateTo=&servlet=CaseSummary.jsp&caseNum=%@&fullDocketReport=Y&confirmCharge=n";
 
+@implementation  DkTURLRequest
 
-@interface PACERClient ()
+-(id) init
 {
-    NSString *_court;
+    if(self = [super init])
+    {
+        self.timeoutInterval = 15.0;
+    }
+    
+    return self;
 }
 @end
 
+@interface PACERClient ()
 
+@property (nonatomic, strong) NSDateFormatter *dateFormatter;
+
+@end
 
 @implementation PACERClient
 
@@ -40,8 +54,6 @@
 {
     return [RECAPClient sharedClient];
 }
-
-
 
 +(NSMutableDictionary *) defaultDocketParams
 {
@@ -59,11 +71,9 @@
 +(NSMutableDictionary *) defaultAppellateDocketParams
 {
     return [@{@"incDktEntries" : @"Y",
-            @"incOrigDkt" : @"Y",
-            @"dktType" : @"dktPublic",
             @"outputXML_TXT": @"XML",
-            @"terminated_parties" : @"off",
-            @"confirmCharge" : @"y",
+            @"confirmCharge" : @"n",
+            @"fullDocketReport" : @"Y",
             @"servlet" : @"CaseSummary.jsp"} mutableCopy];
     
 };
@@ -84,109 +94,158 @@
     {
         self.parameterEncoding = AFFormURLParameterEncoding;
         [self registerHTTPOperationClass:[AFHTTPRequestOperation class]];
+        _dateFormatter = [[NSDateFormatter alloc] init];
+        [_dateFormatter setTimeStyle:NSDateFormatterNoStyle];
+        [_dateFormatter setDateFormat:@"MM/dd/yyyy"];
     }
     
     return self;
 }
 
--(void) setUser:(DkTUser *)user
++(PACERConnectivityStatus) connectivityStatus
 {
-    _user = user;
+    PACERConnectivityStatus status = PACERConnected;
+    
+    AFNetworkReachabilityStatus reachstatus = [[PACERClient sharedClient] networkReachabilityStatus];
+    
+    if(reachstatus == AFNetworkReachabilityStatusNotReachable) status = PACERConnectivityStatusNoInternet;
+    
+    if([DkTSession currentSession].user.username == nil)  status = status | PACERConnectivityStatusNotLoggedIn;
+    
+    return status;
 }
 
-
+-(BOOL) checkNetworkStatusWithAlert:(BOOL)alert
+{
+    BOOL notConnected = (self.networkReachabilityStatus == AFNetworkReachabilityStatusNotReachable);
+    
+    //check cookies
+    
+    if(alert && notConnected)
+    {
+        DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Network Error" andMessage:@"Check Network Connection"];
+        [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+            [alertView dismissAnimated:YES];
+        }];
+        
+        [alertView show];
+        return FALSE;
+    }
+    
+    else return TRUE;
+}
 -(void) loginForSession:(DkTSession *)session sender:(UIViewController<PACERClientProtocol>*)sender
 {
-   MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:sender.view animated:YES];
-    hud.color = kActiveColor;
     
-    NSDictionary *params = @{@"loginid":session.user.username, @"passwd":session.user.password, @"client":session.client, @"faction":@"Login"};
-    
-    NSURLRequest *request = [self requestWithMethod:@"POST" path:kLoginURL parameters:params];
-    
-    AFHTTPRequestOperation *loginOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
-    
-    if([sender respondsToSelector:@selector(handleLogin:)])
-    {
+    @try {
+        
+        NSDictionary *params = @{@"loginid":session.user.username, @"passwd":session.user.password, @"client":session.client, @"faction":@"Login"};
+        
+        DkTURLRequest *request = [[self requestWithMethod:@"POST" path:kLoginURL parameters:params] mutableCopy];
+        [request setCachePolicy:NSURLCacheStorageNotAllowed];
+        AFHTTPRequestOperation *loginOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+        
+        
         [loginOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-    
+            
             if([PACERParser parseLogin:responseObject])
             {
                 [DkTSession setCurrentSession:session];
                 [[DkTSessionManager sharedManager] addSession:session];
-                [sender handleLogin:(_loggedIn = TRUE)];
                 [self setReceiptCookie];
+                _loggedIn = TRUE;
+                
             }
             
-            else
-            {
-                [sender handleLogin:(_loggedIn = FALSE)];
-            }
-        
+            else _loggedIn = FALSE;
+            
+            if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:_loggedIn];
+            
         } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-        
-            [sender handleLogin:(_loggedIn = FALSE)];
+            
+            if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:(_loggedIn = FALSE)];
         }];
+        
+        [self enqueueHTTPRequestOperation:loginOperation];
+        
+        return;
+        
     }
-    [self enqueueHTTPRequestOperation:loginOperation];
     
-    return;
+    @catch (NSException *exception) {
+        
+        if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:(_loggedIn = FALSE)];
+
+    }
+    @finally {
+        
+    }
     
 }
 
 -(void) executeSearch:(NSDictionary *)searchParams sender:(UIViewController<PACERClientProtocol>*)sender
 {
-    NSDictionary *params = [NSDictionary dictionaryWithDictionary:searchParams];
-    
-    NSURLRequest *request = [self requestWithMethod:@"POST" path:kSearchURL parameters:params];
-    
-    AFHTTPRequestOperation *searchOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
-
-    
-    
-    if([sender respondsToSelector:@selector(postSearchResults:nextPage:)])
+    if([self checkNetworkStatusWithAlert:YES])
     {
+        NSDictionary *params = [NSDictionary dictionaryWithDictionary:searchParams];
         
-        [searchOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+        NSURLRequest *request = [self requestWithMethod:@"POST" path:kSearchURL parameters:params];
+        
+        AFHTTPRequestOperation *searchOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+        
+        
+        
+        if([sender respondsToSelector:@selector(postSearchResults:nextPage:)])
+        {
             
-            NSLog(@"%@", [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding]);
+            [searchOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+                
+                
+                NSArray *results = [PACERParser parseSearchResults:responseObject];
+                NSString * nextPage = [PACERParser parseForNextPage:responseObject];
+                
+                [sender postSearchResults:results nextPage:nextPage];
+                
+                
+                
+            } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                [sender postSearchResults:nil nextPage:nil];
+            }];
             
-            NSArray *results = [PACERParser parseSearchResults:responseObject];
-            NSString * nextPage = [PACERParser parseForNextPage:responseObject];
+            [self enqueueHTTPRequestOperation:searchOperation];
             
-            [sender postSearchResults:results nextPage:nextPage];
-            
-            
-            
-        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-            [sender postSearchResults:nil nextPage:nil];
-        }];
-    
-    [self enqueueHTTPRequestOperation:searchOperation];
+        }
         
     }
-         
-        
 }
 
--(void) getDocket:(DkTDocket *)docket sender:(UIViewController<PACERClientProtocol>*)sender
+-(void) retrieveDocket:(DkTDocket *)docket sender:(UIViewController<PACERClientProtocol>*)sender;
 {
-    switch([docket type]) {
-        case DocketTypeNone: return; break;
-        case DocketTypeDistrict: { [self getDistrictDocket:docket sender:sender]; break; }
-        case DocketTypeBankruptcy: { [self getDistrictDocket:docket sender:sender]; break; }
-        case DocketTypeAppellate: { [self getAppellateDocket:docket sender:sender]; break; }
-    }
+    [self retrieveDocket:docket sender:sender to:nil from:nil];
 }
--(void) getDistrictDocket:(DkTDocket *)docket sender:(UIViewController<PACERClientProtocol>*)sender
-    {
-    //if DkT activated
-    //if(token == FALSE) [[PACERClient recapClient] getDocket:docket sender:sender];
-    //end if
+
+-(void) retrieveDocket:(DkTDocket *)docket sender:(UIViewController<PACERClientProtocol>*)sender to:(NSString *)to from:(NSString *)from
+{
+    if(from == nil) from = @"";
+    if(to == nil) to = @"";
     
+    if([self checkNetworkStatusWithAlert:YES])
+    {
+        switch([docket type]) {
+            case DocketTypeNone: return; break;
+            case DocketTypeDistrict: { [self getDistrictDocket:docket sender:sender to:to from:from]; break; }
+            case DocketTypeBankruptcy: { [self getBankruptcyDocket:docket sender:sender to:to from:from]; break; }
+            case DocketTypeAppellate: { [self getAppellateDocket:docket sender:sender to:to from:from]; break; }
+        }
+    }
+    
+    else [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+}
+-(void) getDistrictDocket:(DkTDocket *)docket sender:(UIViewController<PACERClientProtocol>*)sender to:(NSString *)to from:(NSString *)from
+    {
         __block NSString *requestString = [docket.link stringByReplacingOccurrencesOfString:@"iqquerymenu" withString:@"DktRpt"];
     
-            NSMutableURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
+            DkTURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
             
             AFHTTPRequestOperation *queryDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest];
             
@@ -195,29 +254,60 @@
                 NSString *docketLink = [PACERParser parseDocketSheet:responseObject courtType:PACERCourtTypeCivil];
                 NSString *baseString = [requestString substringToIndex:[requestString rangeOfString:@"?"].location];
                 NSString *requestString = [baseString stringByAppendingString:docketLink];
+                
                 NSMutableURLRequest *urlRequest2 = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
                 
-                AFHTTPRequestOperation *getDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest2];
+                [urlRequest2 setHTTPMethod:@"POST"];
+                NSString *boundary = [[NSString randomStringWithLength:10] stringByAppendingString:@"-----"];
+                NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
+                [urlRequest2 addValue:contentType forHTTPHeaderField:@"Content-Type"];
                 
+                NSData *data = [self dcParamsWithDocket:docket boundary:boundary to:to from:from];
+                [urlRequest2 setHTTPBody:data];
+                
+                AFHTTPRequestOperation *getDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest2];
+            
                 [getDocketOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
                     
-                    if([sender respondsToSelector:@selector(handleDocket:entries:)])
+                    if([sender respondsToSelector:@selector(handleDocket:entries:to:from:)])
                     {
-                        NSArray *docketEntries = [PACERParser parseDocket:docket html:responseObject];
-                        [sender handleDocket:docket entries:docketEntries];
+                       
+                        docket.updated = [_dateFormatter stringFromDate:[NSDate date]];
                         
-                        //if DkT activated
-                        //[[PACERClient recapClient] uploadDocket:responseObject court:docket.court caseNumber:docket.docketID];
-                        //end if
+                        dispatch_async(dispatch_queue_create("com.DkT.parse", 0), ^{
+                            
+                            NSArray *docketEntries = [PACERParser parseDocket:docket html:responseObject];
+                            
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                
+                                [sender handleDocket:docket entries:docketEntries to:to from:from];
+                                if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
+                                {
+                                    [[PACERClient recapClient] uploadDocket:responseObject docket:docket];
+                                }
+                                
+                            });
+                            
+                        });
+                        
+                        
+                        
                         
                     }
                  
-                 
-                    [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+                    if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
                 } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
                     
+                    DkTAlertView *alert = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error getting docket.  Check internet connection?"];
                     
-                    [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+                    [alert addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                        
+                        [alertView dismissAnimated:YES];
+                    }];
+                    
+                    [alert show];
+                    
+                    if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
                     
                 }];
                 
@@ -225,79 +315,341 @@
                 
             } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
                 
+                DkTAlertView *alert = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error getting docket.  Check internet connection?"];
+                
+                [alert addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                    
+                    [alertView dismissAnimated:YES];
+                }];
+                
+                [alert show];
+                
                 [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
             }];
             
             [self enqueueHTTPRequestOperation:queryDocketOperation];
 }
 
--(void) getDocument:(DkTDocketEntry *)entry sender:(UIViewController<PACERClientProtocol>*)sender
+-(void) getBankruptcyDocket:(DkTDocket *)docket sender:(UIViewController<PACERClientProtocol>*)sender to:(NSString *)to from:(NSString *)from
 {
+    __block NSString *requestString = [docket.link stringByReplacingOccurrencesOfString:@"iqquerymenu" withString:@"DktRpt"];
     
-    NSString *courtLink = [entry courtLink];
+    DkTURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
     
-    NSString *path = [entry link];
+    AFHTTPRequestOperation *queryDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest];
     
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:path]];
-    [request setHTTPMethod:@"POST"];
-    NSString *urlenc = [entry urlEncodedParams];
-    NSData *form = [urlenc dataUsingEncoding:NSUTF8StringEncoding];
-    [request setHTTPBody:form];
-    AFHTTPRequestOperation *getDocument = [[AFHTTPRequestOperation alloc] initWithRequest:request];
-/*
-    NSDictionary *multi_form = @{@"caseid": entry.casenum,
-                                 @"de_seq_num":entry.casenum,
-                                 @"got_receipt":@1,
-                                 @"pdf_header":@1,
-                                 @"pdf_toggle_possible":@1
-                                 };
-  */  
+    [queryDocketOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+        
+        NSString *docketLink = [PACERParser parseDocketSheet:responseObject courtType:PACERCourtTypeCivil];
+        NSString *baseString = [requestString substringToIndex:[requestString rangeOfString:@"?"].location];
+        NSString *requestString = [baseString stringByAppendingString:docketLink];
+       
+        DkTURLRequest *urlRequest2 = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
+        
+        [urlRequest2 setHTTPMethod:@"POST"];
+        NSString *boundary = [[NSString randomStringWithLength:10] stringByAppendingString:@"-----"];
+        NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
+        [urlRequest2 addValue:contentType forHTTPHeaderField:@"Content-Type"];
+        
+        NSData *data = [self bkParamsWithDocket:docket boundary:boundary to:to from:from];
+        [urlRequest2 setHTTPBody:data];
+        
+        AFHTTPRequestOperation *getDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest2];
+        
+        [getDocketOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+            
+            if([sender respondsToSelector:@selector(handleDocket:entries:to:from:)])
+            {
+               
+                docket.updated = [_dateFormatter stringFromDate:[NSDate date]];
+                NSArray *docketEntries = [PACERParser parseDocket:docket html:responseObject];
+                [sender handleDocket:docket entries:docketEntries to:to from:from];
+                
+                if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
+                {
+                    [[PACERClient recapClient] uploadDocket:responseObject docket:docket];
+                }
+                
+            }
+            
+            
+            [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+            
+            
+            if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+            
+        }];
+        
+        [self enqueueHTTPRequestOperation:getDocketOperation];
+        
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        
+        if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+    }];
+    
+    [self enqueueHTTPRequestOperation:queryDocketOperation];
+}
+
+-(NSData *) bkParamsWithDocket:(DkTDocket *)docket boundary:(NSString *)boundary to:(NSString *)to from:(NSString *)from
+{
+    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+    
+    [dict setObject:docket.case_num forKey:@"case_num"];
+    [dict setObject:@"html" forKey:@"output_format"];
+    [dict setObject:@"oldest date first" forKey:@"sort1"];
+    [dict setObject:@"filed" forKey:@"date_type"];
+    NSString *str = [docket.link substringFromIndex:[docket.link rangeOfString:@"?"].location+1];
+    [dict setObject:str forKey:@"all_case_ids"];
+    
+    [dict setObject:from forKey:@"date_from"];
+    [dict setObject:to forKey:@"date_to"];
+    
+    [dict setObject:to forKey:@"documents_numbered_to_"];
+    [dict setObject:from forKey:@"documents_numbered_from_"];
+    
+    NSMutableData *data = [NSMutableData data];
+    
+    NSArray *keys = [dict allKeys];
+    
+    for (NSDictionary *key in keys) {
+        [data appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        [data appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key] dataUsingEncoding:NSUTF8StringEncoding]];
+        [data appendData:[[NSString stringWithFormat:@"%@\r\n", [dict objectForKey:key]] dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+    
+    return data;
+}
+
+-(NSData *) dcParamsWithDocket:(DkTDocket *)docket boundary:(NSString *)boundary to:(NSString *)to from:(NSString *)from
+{
+    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+    
+    [dict setObject:docket.case_num forKey:@"case_num"];
+    [dict setObject:@"html" forKey:@"output_format"];
+    [dict setObject:@"oldest date first" forKey:@"sort1"];
+    [dict setObject:@"filed" forKey:@"date_type"];
+    NSString *str = [docket.link substringFromIndex:[docket.link rangeOfString:@"?"].location+1];
+    [dict setObject:str forKey:@"all_case_ids"];
+    
+    
+    [dict setObject:from forKey:@"date_from"];
+    [dict setObject:to forKey:@"date_to"];
+    
+  //  [dict setObject:to forKey:@"documents_numbered_to_"];
+  //  [dict setObject:from forKey:@"documents_numbered_from_"];
+    
+    NSMutableData *data = [NSMutableData data];
+    
+    NSArray *keys = [dict allKeys];
+    
+    for (NSDictionary *key in keys) {
+        [data appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        [data appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key] dataUsingEncoding:NSUTF8StringEncoding]];
+        [data appendData:[[NSString stringWithFormat:@"%@\r\n", [dict objectForKey:key]] dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+    
+    return data;
+}
+
+
+-(NSString *) apParamsWithDocket:(DkTDocket *)docket
+{
+    NSString *str = [NSString stringWithFormat:@"?incPdfMulti=Y&incDktEntries=Y&dateFrom=&dateTo=&servlet=CaseSummary.jsp&caseNum=%@&fullDocketReport=Y&confirmCharge=n",docket.case_num];
+    return str;
+    
+}
+
+
+-(void) retrieveDocument:(DkTDocketEntry *)entry sender:(id<PACERClientProtocol>)sender docket:(DkTDocket *)docket
+{
+    if([self checkNetworkStatusWithAlert:YES])
+    {
+        switch(docket.type) {
+            case DocketTypeNone: return; break;
+            case DocketTypeDistrict: { [self getDistrictDocument:entry sender:sender docket:docket]; break; }
+            case DocketTypeBankruptcy: { [self getDistrictDocument:entry sender:sender docket:docket]; break; }
+            case DocketTypeAppellate: { [self getAppellateDocument:entry sender:sender docket:docket]; break; }
+        }
+    }
+    
+    
+    else if([sender isKindOfClass:[UIViewController class]])
+    {
+        [MBProgressHUD hideAllHUDsForView:[(UIViewController *)sender view] animated:YES];
+    }
+}
+
+
+-(void) getAppellateDocument:(DkTDocketEntry *)entry sender:(id<PACERClientProtocol>)sender docket:(DkTDocket *)docket
+{
+    NSString *tempDir = NSTemporaryDirectory();
+    
+    NSString *tempFilePath = [tempDir stringByAppendingString:[entry fileName]];
+    //if file exists at temp path, then just get it from temppath
+    if([[NSFileManager defaultManager] fileExistsAtPath:tempFilePath])
+    {
+        if([sender respondsToSelector:@selector(didDownloadDocketEntry:atPath:cost:)])
+        {
+            [sender didDownloadDocketEntry:entry atPath:tempFilePath cost:NO];
+        }
+        return;
+    }
+    
+    NSString *urlString = [NSString stringWithFormat:@"https://ecf.%@.uscourts.gov/cmecf/servlet/TransportRoom?servlet=ShowDoc&incPdfHeader=Y&incPdfHeaderDisp=Y&dls_id=%@&caseId=%@&pacer=t&recp=%d", [docket shortCourt], entry.docID, docket.cs_caseid,(int)(CFAbsoluteTimeGetCurrent()+NSTimeIntervalSince1970)];
+    NSMutableURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+    
+    AFHTTPRequestOperation *getDocument = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest];
+    
     [getDocument setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-        
-        
-        
-        
         
         NSString *responseString = [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding];
         
-        if([responseString rangeOfString:@"Document Selection Menu" options:NSCaseInsensitiveSearch].location != NSNotFound) {
-            //handle multidocument
-            
-            if([sender respondsToSelector:@selector(handleDocumentsFromEntry:entries:)])
-            {
+        if(responseString)
+        {
+            NSLog(@"%@",responseString);
+            if([responseString rangeOfString:@"Documents" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                //handle multidocument
                 
-                NSArray *docketEntries = [PACERParser parseDocumentPage:responseObject];
+                if([sender respondsToSelector:@selector(handleDocumentsFromDocket:entry:entries:)])
+                {
+                    
+                    if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                    {
+                        [[PACERClient recapClient] uploadCasePDF:responseObject docketEntry:entry];
+                    }
+                    
+                    NSArray *docketEntries = [PACERParser parseAppellateMultiDoc:entry html:responseObject];
+                    
+                    [sender handleDocumentsFromDocket:docket entry:entry entries:docketEntries];
+                }
                 
-                [sender handleDocumentsFromEntry:entry entries:docketEntries];
             }
             
+            else if (([responseString rangeOfString:@"You do not have permission to view this document." options:NSCaseInsensitiveSearch].location !=NSNotFound) || [responseString rangeOfString:@"Under Seal" options:NSCaseInsensitiveSearch].location !=NSNotFound) {
+                
+                if([sender respondsToSelector:@selector(handleSealedDocument:)])
+                {
+                    [sender handleSealedDocument:entry];
+                }
+            }
         }
         
         else {
-            
-            NSString *tempDir = NSTemporaryDirectory();
-            
-            NSLog(@"%@", [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding]); 
-            
-            NSString *tempFilePath = [tempDir stringByAppendingString:[entry fileName]];
             
             NSLog(@"%@", [operation.response.allHeaderFields description]);
             
             if ([[operation.response.allHeaderFields objectForKey:@"Content-Type"] isEqualToString:@"application/pdf"]) {
                 
-                tempFilePath = [tempFilePath stringByAppendingPathComponent:@".pdf"];
+                NSData *data = responseObject;
+                
+                [data writeToFile:tempFilePath atomically:YES];
+                
+                if([sender respondsToSelector:@selector(didDownloadDocketEntry:atPath:)]) [sender didDownloadDocketEntry:entry atPath:tempFilePath];
+                
+                if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                {
+                    [[PACERClient recapClient] uploadCasePDF:responseObject docketEntry:entry];
+                }
+                
+            }
+        }
+                
+        
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        
+        if([sender respondsToSelector:@selector(handleDocketEntryError:)]) [sender handleDocketEntryError:entry];
+        
+    }];
+    
+    [self enqueueHTTPRequestOperation:getDocument];
+
+}
+
+-(void) getDistrictDocument:(DkTDocketEntry *)entry sender:(id<PACERClientProtocol>)sender docket:(DkTDocket *)docket
+{
+    NSString *tempDir = NSTemporaryDirectory();
+    
+    NSString *tempFilePath = [tempDir stringByAppendingString:[entry fileName]];
+    //if file exists at temp path, then just get it from temppath
+    if([[NSFileManager defaultManager] fileExistsAtPath:tempFilePath])
+    {
+        if([sender respondsToSelector:@selector(didDownloadDocketEntry:atPath:cost:)])
+        {
+            [sender didDownloadDocketEntry:entry atPath:tempFilePath cost:NO];
+        }
+        
+        return;
+    }
+    
+    NSString *courtLink = [entry courtLink];
+    
+    NSString *path = [entry link];
+    
+    DkTURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:path]];
+    [request setHTTPMethod:@"POST"];
+    NSString *urlenc = [entry urlEncodedParams];
+    urlenc = (urlenc.length > 0) ? [urlenc stringByAppendingString:@"&got_receipt=1"] : @"got_receipt=1";
+    NSData *form = [urlenc dataUsingEncoding:NSUTF8StringEncoding];
+    [request setHTTPBody:form];
+    
+   
+    AFHTTPRequestOperation *getDocument = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+  
+    [getDocument setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+        
+        
+        NSString *responseString = [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding];
+        
+        
+        if(responseString && [responseString rangeOfString:@"Document Selection Menu" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            //handle multidocument
+            
+            if([sender respondsToSelector:@selector(handleDocumentsFromDocket:entry:entries:)])
+            {
+                /*
+                if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                {
+                    [[PACERClient recapClient] uploadCasePDF:responseObject docketEntry:entry];
+                }*/
+
+                NSArray *docketEntries = [PACERParser parseMultiDoc:entry html:responseObject];
+                    
+                [sender handleDocumentsFromDocket:docket entry:entry entries:docketEntries];
+            }
+        }
+        
+        else if (responseString && (([responseString rangeOfString:@"You do not have permission to view this document." options:NSCaseInsensitiveSearch].location !=NSNotFound) || [responseString rangeOfString:@"Under Seal" options:NSCaseInsensitiveSearch].location !=NSNotFound)) {
+            
+            if([sender respondsToSelector:@selector(handleSealedDocument:)])
+            {
+                [sender handleSealedDocument:entry];
+            }
+        }
+        
+        else {
+            
+            NSLog(@"%@", [operation.response.allHeaderFields description]);
+            
+            if ([[operation.response.allHeaderFields objectForKey:@"Content-Type"] isEqualToString:@"application/pdf"]) {
+                
                 
                 NSData *data = responseObject;
                 
                 [data writeToFile:tempFilePath atomically:YES];
                 
-                if([sender respondsToSelector:@selector(didDownloadDocketEntry:atPath:)])
+                if([sender respondsToSelector:@selector(didDownloadDocketEntry:atPath:cost:)])
                 {
-                    [sender didDownloadDocketEntry:entry atPath:tempFilePath];
-                    
-                    [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+                    [sender didDownloadDocketEntry:entry atPath:tempFilePath cost:YES];
                     
                 }
+                
+                if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                {
+                    [[PACERClient recapClient] uploadCasePDF:responseObject docketEntry:entry];
+                
+                }
+                
                 
             }
             
@@ -311,21 +663,27 @@
                 
                 [downloadOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
                     
-                    if([sender respondsToSelector:@selector(didDownloadDocketEntry:atPath:)])
+                    if([sender respondsToSelector:@selector(didDownloadDocketEntry:atPath:cost:)])
                     {
-                        [sender didDownloadDocketEntry:entry atPath:tempFilePath];
-                        
-                        [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+                        [sender didDownloadDocketEntry:entry atPath:tempFilePath cost:YES];
+                    
                         
                     }
                     
                     
-                    
+                    if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                    {
+                        NSData *pdf = [NSData dataWithContentsOfFile:tempFilePath];
+                        [[PACERClient recapClient] uploadCasePDF:pdf docketEntry:entry];
+                        
+                    }
                     
                 }
                  
                 failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-                                                             
+                    
+                    if([sender respondsToSelector:@selector(handleDocketEntryError:)]) [sender handleDocketEntryError:entry];
+                    
                     }];
                 
                 [self enqueueHTTPRequestOperation:downloadOperation];
@@ -335,43 +693,105 @@
         
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
         NSLog(@"%@", [error description]);
+        
+        if([sender respondsToSelector:@selector(handleDocketEntryError:)]) [sender handleDocketEntryError:entry];
     }];
     
     [self enqueueHTTPRequestOperation:getDocument];
 }
-    
-        
-            
-      //  [[PACERClient recapClient] uploadCasePDF:responseObject court:entry.court url:entry.link];
--(void) getAppellateDocket:(DkTDocket *)docket sender:(UIViewController<PACERClientProtocol>*)sender
-{
-         
-        __block NSString *baseString = [NSString stringWithFormat:@"https://ecf.%@.uscourts.gov/cmecf/servlet/TransportRoom",docket.court];
-            
-        NSMutableDictionary *params = [PACERClient defaultAppellateDocketParams];
-        [params setObject:docket.case_num forKey:@"caseNum"];
-            
-        NSURLRequest *urlRequest = [self requestWithMethod:@"POST" path:baseString parameters:params];
-            
-        AFHTTPRequestOperation *queryDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest];
-            
-        [queryDocketOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-                
-                NSArray *docketEntries = [PACERParser parseAppellateDocket:responseObject];
-                [sender handleDocket:docket entries:docketEntries];
 
+-(void) getAppellateDocket:(DkTDocket *)docket sender:(UIViewController<PACERClientProtocol>*)sender to:(NSString *)to from:(NSString *)from
+{ 
+    NSString *urlString = [docket.courtLink stringByAppendingString:([docket.court rangeOfString:@"bap" options:NSCaseInsensitiveSearch].location != NSNotFound) ?  @"cmecf-bap-live/servlet/TransportRoom" : @"cmecf/servlet/TransportRoom"];
+    
+    
+     if(docket.cs_caseid.length == 0)
+    {
+        urlString = [urlString stringByAppendingString:[NSString stringWithFormat:@"?servlet=CaseSelectionTable.jsp&csnum1=%@&csnum2=%@&aName=&searchPty=pty", docket.case_num, docket.case_num]];
+         NSLog(@"%@",urlString);
+        DkTURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+        [request setHTTPMethod:@"GET"];
+        AFHTTPRequestOperation *queryDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+        
+        [queryDocketOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+            NSString *string = [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding];
+            NSLog(@"%@",string);
+            [PACERParser parseAppellateCaseSelectionPage:responseObject withDocket:docket completion:^(NSString *cs_caseid) {
+    
+                if(cs_caseid.length > 0) [self getAppellateDocket:docket sender:sender to:to from:from];
+                
+                else
+                {
+                    [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+                    
+                    DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error locating docket."];
+                    [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                        [alertView dismissAnimated:YES];
+                        
+                    }];
+                    
+                    if([DkTAlertView sharedQueue].count == 0) [alertView show];
+                    
+                }
+                
+            }];
+            
+        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+            
+            if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+        }];
+
+        [self enqueueHTTPRequestOperation:queryDocketOperation];
+        return;
+    }
+    
+    urlString = [urlString stringByAppendingString:[self apParamsWithDocket:docket]];
+        NSLog(@"%@", urlString);
+    
+        NSURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+        AFHTTPRequestOperation *queryDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+    
+        [queryDocketOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+            
+            dispatch_async(dispatch_queue_create("com.DkT.parse", 0), ^{
+                
+                NSArray *docketEntries = [PACERParser parseAppellateDocket:docket html:responseObject];
+                
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    
+                    docket.updated = [_dateFormatter stringFromDate:[NSDate date]];
+                    [sender handleDocket:docket entries:docketEntries to:to from:from];
+                });
+                
+            });
+            
+            
+            
+            
+            
+            if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
+            {
+                [[PACERClient recapClient] uploadDocket:responseObject docket:docket];
+            }
+            
+            if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+            
                 } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
                     
+                if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
         }];
                             
             [self enqueueHTTPRequestOperation:queryDocketOperation];
 }
 
+
 -(NSHTTPCookie *) receiptCookie
 {
     NSMutableDictionary *cookieDict = [NSMutableDictionary dictionary];
     [cookieDict setObject:@"PacerPref" forKey:NSHTTPCookieName];
-    [cookieDict setObject:@"receipt=N" forKey:NSHTTPCookieValue];
+    
+    NSString *receipt = @"receipt=N";
+    [cookieDict setObject:receipt forKey:NSHTTPCookieValue];
     [cookieDict setObject:@"/" forKey:NSHTTPCookiePath];
     [cookieDict setObject:@".uscourts.gov" forKey:NSHTTPCookieOriginURL];
     [cookieDict setObject:@"TRUE" forKey:NSHTTPCookieSecure];
@@ -379,12 +799,40 @@
     return [NSHTTPCookie cookieWithProperties:cookieDict];
 }
 
+-(NSData *) appellateDocumentParams:(NSString *)boundary docID:(NSString *)docID caseNum:(NSString *)caseNum
+{
+    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+    [dict setObject:@"ShowDoc" forKey:@"servlet"];
+    [dict setObject:@"Y" forKey:@"incPdfHeader"];
+    [dict setObject:@"Y" forKey:@"incPdfHeaderDisp"];
+    [dict setObject:docID forKey:@"dls_id"];
+    [dict setObject:docID forKey:@"caseId"];
+    [dict setObject:@"t" forKey:@"pacer"];
+    [dict setObject:[NSString stringWithFormat:@"%f", CFAbsoluteTimeGetCurrent()+NSTimeIntervalSince1970] forKey:@"recp"];
+    
+    
+    NSMutableData *data = [NSMutableData data];
+    
+    NSArray *keys = [dict allKeys];
+    
+    for (NSDictionary *key in keys) {
+        [data appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        [data appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key] dataUsingEncoding:NSUTF8StringEncoding]];
+        [data appendData:[[NSString stringWithFormat:@"%@\r\n", [dict objectForKey:key]] dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+    
+    return data;
+    
+    
+}
+
+
 -(void) setReceiptCookie
 {
     [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:[self receiptCookie]];
 }
 
--(void) getDocLink:(DkTDocketEntry *)entry sender:(UIViewController<PACERClientProtocol>*)sender
+-(void) retrieveDocumentLink:(DkTDocketEntry *)entry sender:(UIViewController<PACERClientProtocol>*)sender
 {
     if([sender respondsToSelector:@selector(handleDocLink:docLink:)] && entry.docLinkParam)
     {
@@ -393,7 +841,7 @@
         path = [path stringByAppendingString:@"cgi-bin/document_link.pl?"];
         path = [path stringByAppendingString:entry.docLinkParam];
         
-        AFHTTPRequestOperation *requestOp = [[AFHTTPRequestOperation alloc] initWithRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:path]]];
+        AFHTTPRequestOperation *requestOp = [[AFHTTPRequestOperation alloc] initWithRequest:[DkTURLRequest requestWithURL:[NSURL URLWithString:path]]];
         
         [requestOp setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
             
@@ -422,7 +870,7 @@
         path = [path stringByAppendingString:@"cgi-bin/document_link.pl?"];
         path = [path stringByAppendingString:entry.docLinkParam];
         
-        AFHTTPRequestOperation *requestOp = [[AFHTTPRequestOperation alloc] initWithRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:path]]];
+        AFHTTPRequestOperation *requestOp = [[AFHTTPRequestOperation alloc] initWithRequest:[DkTURLRequest requestWithURL:[NSURL URLWithString:path]]];
         
         [requestOp setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
             
@@ -442,6 +890,40 @@
         [requestOp start];
     }
     
+}
+
+
+-(BOOL) cookieExists
+{
+    NSArray *cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:@"http://uscourts.gov/"]];
+    
+    for(NSHTTPCookie *cookie in cookies)
+    {
+        NSDictionary *cookieDict = [cookie properties];
+        if([cookieDict objectForKey:NSHTTPCookieName])
+        {
+            return TRUE;
+        }
+        
+    }
+    
+    DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Session Expired" andMessage:@"PACER session expired. Login required."];
+    
+    [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+        [alertView dismissAnimated:YES];
+        
+        if([[[DkTSession sharedInstance] delegate] respondsToSelector:@selector(cookieDidExpireWithReveal:)])
+        {
+            [[[DkTSession sharedInstance] delegate] cookieDidExpireWithReveal:YES];
+        }
+    
+        
+    }];
+    
+    if([[DkTAlertView sharedQueue] count] == 0) [alertView show];
+    
+    
+    return FALSE;
 }
 
 

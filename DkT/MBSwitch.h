@@ -1,6 +1,5 @@
 //
 //  MBSwitch.h
-//  MBSwitchDemo
 //
 //  Created by Mathieu Bolard on 22/06/13.
 //  Copyright (c) 2013 Mathieu Bolard. All rights reserved.

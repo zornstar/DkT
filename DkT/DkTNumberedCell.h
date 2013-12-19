@@ -10,6 +10,5 @@
 
 @interface DkTNumberedCell : UITableViewCell
 
-@property (nonatomic) NSInteger number;
-@property (nonatomic, strong) UILabel *numberLabel;
+@property (nonatomic, strong, readonly) UILabel *numberLabel;
 @end

@@ -11,20 +11,10 @@
 #import "FSButton.h"
 #import "CKCalendarView.h"
 
-@interface DkTSearchViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate, PACERClientProtocol, CKCalendarDelegate>
+#import "DkTTabViewController.h"
 
-@property (nonatomic, strong) UITextField *caseNumber;
-@property (nonatomic, strong) UITextField *partyName;
 
-@property (nonatomic, strong) UITableView *tableView;
+@interface DkTSearchViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate, PACERClientProtocol, CKCalendarDelegate, DkTTabBarViewControllerDelegate>
 
-@property (nonatomic, strong) NSMutableArray *data;
-@property (nonatomic, strong) NSArray *controls;
-@property (nonatomic, strong) NSArray *labels;
-
-@property (nonatomic, strong) FSButton *searchPACERButton;
-
-@property (nonatomic, readonly, getter = isLoggedIn) BOOL loggedIn;
--(void) postSearchResults:(NSArray *)results;
 
 @end

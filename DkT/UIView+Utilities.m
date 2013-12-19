@@ -1,8 +1,5 @@
 //
 //  UIView+Utilities.m
-//  DkTp
-//
-//  Created by Matthew Zorn on 7/6/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
 
@@ -19,6 +16,24 @@
     [shape setPath:rounded.CGPath];
     
     self.layer.mask = shape;
+}
+
+
+- (UIViewController *)viewController {
+    if ([self.nextResponder isKindOfClass:UIViewController.class])
+        return (UIViewController *)self.nextResponder;
+    else
+        return nil;
+}
+
+-(void) clipToBoundsRecursive:(UIView *)someView
+{
+    NSLog(@"%@", someView);
+    someView.clipsToBounds = NO;
+    for (UIView *v in someView.subviews)
+    {
+        [self clipToBoundsRecursive:v];
+    }
 }
 
 @end

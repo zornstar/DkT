@@ -1,8 +1,5 @@
 //
 //  UIView+Utilities.h
-//  DkTp
-//
-//  Created by Matthew Zorn on 7/6/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
 
@@ -11,5 +8,9 @@
 @interface UIView (Utilities)
 
 -(void) roundCorners:(UIRectCorner)corners;
+- (UIViewController *)viewController;
+
+/* Debug */
+-(void) clipToBoundsRecursive:(UIView *)someView;
 
 @end

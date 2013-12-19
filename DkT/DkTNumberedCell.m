@@ -14,11 +14,22 @@
 {
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self) {
-        _numberLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-        [self.imageView addSubview:_numberLabel];
+       // self.imageView.image = [[UIImage alloc] init];
+        self.indentationWidth = 20.;
+        self.indentationLevel = 1.;
+        _numberLabel = [[UILabel alloc] initWithFrame:CGRectMake(5, 0, 22, 80)];
+        _numberLabel.adjustsFontSizeToFitWidth = YES;
+        _numberLabel.numberOfLines = 1;
+        _numberLabel.textAlignment = NSTextAlignmentCenter;
+        _numberLabel.font = [UIFont fontWithName:kMainFont size:12];
+         _numberLabel.textColor = [UIColor activeColor];
+        _numberLabel.backgroundColor = [UIColor clearColor];
+        
+        [self addSubview:_numberLabel];
     }
     return self;
 }
+
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated
 {
@@ -27,10 +38,4 @@
     // Configure the view for the selected state
 }
 
--(void) setNumber:(NSInteger)number
-{
-    _number = number;
-    self.numberLabel.frame = self.imageView.frame;
-    self.numberLabel.text = [NSString stringWithFormat:@"%d",number];
-}
 @end

@@ -10,10 +10,20 @@
 
 @class DkTTabBar;
 
+@protocol DkTTabBarViewControllerDelegate <NSObject>
+
+@optional
+
+-(void) didFinishRotationAnimation:(UIInterfaceOrientation)fromInterfaceOrientation;
+
+@end
+
 @interface DkTTabViewController : UIViewController
 
 @property (nonatomic, strong) DkTTabBar *tabBar;
 @property (nonatomic, strong) UIView *contentView;
 @property (nonatomic, strong, readonly) NSMutableArray *viewControllers;
 @property (nonatomic, readonly) NSUInteger selectedIndex;
+@property (nonatomic, weak) id<DkTTabBarViewControllerDelegate>delegate;
+
 @end

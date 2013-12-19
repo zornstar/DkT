@@ -406,6 +406,12 @@ typedef void (^MBProgressHUDCompletionBlock)();
  */
 @property (assign, getter = isSquare) BOOL square;
 
+/* mz modification:
+ * Make the indicator publicly accessable
+ */
+
+@property (atomic, MB_STRONG) UIView *indicator;
+
 @end
 
 
@@ -449,3 +455,4 @@ typedef void (^MBProgressHUDCompletionBlock)();
 @property (nonatomic, assign, getter = isAnnular) BOOL annular;
 
 @end
+

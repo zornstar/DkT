@@ -8,10 +8,8 @@
 
 #import <UIKit/UIKit.h>
 #import "PACERClient.h"
-#import "DkTDocketTableViewController.h"
-#import "DkTDetailViewController.h"
 
-@class DkTDocket;
+@class DkTDocket, DkTDocketTableViewController, DkTDetailViewController;
 
 @interface DkTDocketViewController : UIViewController <PACERClientProtocol>
 

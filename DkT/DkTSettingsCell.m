@@ -23,13 +23,15 @@
     self = [super initWithFrame:frame];
     if (self) {
         
+        self.inverted = NO;
+        
     #define kLabelFontSize 14
         
         self.imageView = [[UIImageView alloc] initWithFrame:CGRectMake(self.contentView.frame.size.width/4., self.contentView.frame.size.width/6., self.contentView.frame.size.width/2, self.contentView.frame.size.height/3.)];
         self.imageView.contentMode = UIViewContentModeScaleAspectFit;
         self.imageView.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
         self.imageView.backgroundColor = [UIColor clearColor];
-        self.backgroundColor = kActiveColor;
+        self.backgroundColor = [UIColor activeColor];
         self.layer.cornerRadius = 5.0;
         [self.contentView addSubview:self.imageView];
         
@@ -38,7 +40,7 @@
         self.label = [[UILabel alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(self.imageView.frame), self.contentView.frame.size.width, self.contentView.frame.size.height - y)];
         self.label.backgroundColor = [UIColor clearColor];
         self.label.font = [UIFont fontWithName:kMainFont size:kLabelFontSize];
-        self.label.textColor = kInactiveColor;
+        self.label.textColor = [UIColor inactiveColor];
         self.label.textAlignment = NSTextAlignmentCenter;
         self.label.numberOfLines = 1;
         
@@ -60,11 +62,14 @@
     self.imageView.image = image;
 }
 
--(void) invert
+-(void) setInverted:(BOOL)inverted
 {
-    [self setImage:[self.imageView.image imageWithColor:self.backgroundColor]];
-    self.backgroundColor = kInactiveColor;
-    self.label.textColor = kActiveColor;
+    _inverted = inverted;
+    self.backgroundColor = (inverted) ?  [UIColor inactiveColor] : [UIColor activeColor];
+    self.label.textColor = (inverted) ? [UIColor activeColor] : [UIColor inactiveColor];
+    [self setImage:[self.imageView.image imageWithColor:(inverted) ? [UIColor activeColor] : [UIColor inactiveColor]]];
+
+    
 }
 
 @end

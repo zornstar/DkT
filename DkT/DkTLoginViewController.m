@@ -7,6 +7,8 @@
 //
 
 #import "DkTLoginViewController.h"
+
+#import "DkTSettings.h"
 #import "DkTSearchViewController.h"
 #import "DkTUser.h"
 #import "DkTSession.h"
@@ -18,9 +20,14 @@
 #import "DkTSessionManager.h"
 #import "DkTLoginViewController.h"
 #import "UIResponder+FirstResponder.h"
+#import "UIViewController+MJPopupViewController.h"
+#import "DkTAlertView.h"
+#import "DkTTextField.h"
+
 
 #import <QuartzCore/QuartzCore.h>
 
+#define LOGIN_FRAME CGRectMake(self.view.frame.size.width*.05, 0, self.usernameField.frame.size.width, CGRectGetMaxY(self.clientField.frame)-self.usernameField.frame.origin.y)
 
 @interface CostLabel : UILabel
 
@@ -37,7 +44,6 @@
 @interface DkTLoginViewController ()
 
 @property (nonatomic, strong)  DkTSession *selectedSession;
-@property (nonatomic, strong) UIView *activeView;
 
 @property (nonatomic, strong) UITextField *usernameField;
 @property (nonatomic, strong) UITextField *passwordField;
@@ -47,12 +53,17 @@
 @property (nonatomic, strong) FSButton *sessionButton;
 
 @property (nonatomic, strong) UIView *contentView;
+@property (nonatomic, strong) UIView *activeView;
 
 @property (nonatomic, strong) UIView *loginView;
 @property (nonatomic, strong) UITableView *usersView;
 @property (nonatomic, strong) UIView *loggedInView;
 @property (nonatomic, strong) NSArray *recentSessions;
 
+
+@property (nonatomic) DkTPanelVisibility panel;
+
+@property (nonatomic, strong) UITapGestureRecognizer *dismissKeyboardTap;
 
 @end
 
@@ -62,59 +73,123 @@
 - (id)init {
     self = [super init];
     if (self) {
+        _modal = NO;
+        _panel = DkTLoginPanelVisible;
+        [[DkTSession sharedInstance] setDelegate:self];
         
+        static dispatch_once_t onceToken;
+        
+        dispatch_once(&onceToken, ^{
+            [self checkAutoLogin];
+        });
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(forceLogout:)
+                                                     name:@"forceLogout"
+                                                   object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(checkAutoLogin)
+                                                     name:@"autoLogin"
+                                                   object:nil];
     }
     return self;
 }
 
 - (void)viewDidLoad
 {
-    
     [super viewDidLoad];
 	
     _selectedSession = nil;
-    self.contentView = [[UIView alloc] initWithFrame:self.view.bounds];
-    self.contentView.backgroundColor = [UIColor clearColor];
+    CGRect frame = self.view.bounds;
+    self.contentView = [[UIView alloc] initWithFrame:frame];
+    self.contentView.layer.cornerRadius = 5.0f;
+    self.contentView.backgroundColor = [UIColor inactiveColorDark];
     self.view.backgroundColor = [UIColor clearColor];
     self.view.autoresizesSubviews = YES;
+    self.view.layer.cornerRadius = 5.0f;
     self.contentView.autoresizesSubviews = YES;
-    self.contentView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    
+    self.contentView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.view.autoresizingMask = UIViewAutoresizingNone;
-    
     [self.contentView addSubview:self.loginView];
     [self.view addSubview:self.contentView];
     [self.contentView addSubview:self.loginButton];
-    [self.contentView addSubview:self.sessionButton];
     
+    //first time loading, check auto login
     
-    _activeView = self.loginView;
+    if([DkTSession currentSession].user.username.length > 0) _status = DkTLoggedIn;
     
+    else if(self.status == DkTLoggingIn) [self displayLoggingIn];
+}
+
+-(void) displayLoggingIn
+{
+    MBProgressHUD *hud;
+    
+    if((hud = [MBProgressHUD HUDForView:self.contentView]))
+    {
+        [self.contentView bringSubviewToFront:hud];
+    }
+    
+    else
+    {
+        hud = [MBProgressHUD showHUDAddedTo:self.contentView animated:YES];
+        hud.color = [UIColor clearColor];
+    }
+}
+-(void) checkAutoLogin
+{
+    BOOL login = [[[DkTSettings sharedSettings] valueForKey:DkTSettingsAutoLoginKey] boolValue];
+    
+    if(login)
+    {
+        [[PACERClient sharedClient] setReachabilityStatusChangeBlock:^(AFNetworkReachabilityStatus status) {
+           
+            if( (status == AFNetworkReachabilityStatusReachableViaWWAN) || (status == AFNetworkReachabilityStatusReachableViaWiFi) )
+            {
+                DkTSession *session = [DkTSessionManager lastSession];
+                if(session.user.username.length > 0)
+                {
+                    _status = DkTLoggingIn;
+                   [[PACERClient sharedClient] loginForSession:session sender:self];
+                }
+            }
+            
+            else [MBProgressHUD hideAllHUDsForView:self.contentView animated:YES];
+            
+            [[PACERClient sharedClient] setReachabilityStatusChangeBlock:nil];
+        }];
+    }
 }
 
 -(UIView *) loginView
 {
     if(_loginView == nil)
     {
-        self.usernameField = [self textFieldWithPassword:NO placeholder:@" Enter User Name" origin:CGPointMake(self.view.frame.size.width*.05, 0) icon:[[UIImage imageNamed:@"user"] imageWithColor:[UIColor lightGrayColor]]];
+        self.usernameField = [self textFieldWithPassword:NO placeholder:@" Enter User Name" origin:CGPointMake(0,20) icon:[[DkTImageCache sharedCache] imageNamed:@"user" color:[UIColor lightGrayColor]]];
         self.usernameField.helpText = @"PACER username";
         
-        CGPoint nextOrigin = CGPointMake(self.view.frame.size.width*.05, CGRectGetMaxY(self.usernameField.frame)+self.usernameField.frame.size.height);
+        CGPoint nextOrigin = CGPointMake(0, CGRectGetMaxY(self.usernameField.frame)+self.usernameField.frame.size.height);
         
-        self.passwordField = [self textFieldWithPassword:YES placeholder:@" Enter Password" origin:nextOrigin icon:[[UIImage imageNamed:@"lock"] imageWithColor:[UIColor lightGrayColor]]];
+        self.passwordField = [self textFieldWithPassword:YES placeholder:@" Enter Password" origin:nextOrigin icon:[[DkTImageCache sharedCache] imageNamed:@"lock" color:[UIColor lightGrayColor]]];
         self.passwordField.helpText = @"PACER password";
         
-        nextOrigin = CGPointMake(self.view.frame.size.width*.05, CGRectGetMaxY(self.passwordField.frame)+self.passwordField.frame.size.height);
+        nextOrigin = CGPointMake(0, CGRectGetMaxY(self.passwordField.frame)+self.passwordField.frame.size.height);
         
-        self.clientField = [self textFieldWithPassword:YES placeholder:@" Enter Client (optional)" origin:nextOrigin icon:nil];
+        self.clientField = [self textFieldWithPassword:NO placeholder:@" Enter Client (optional)" origin:nextOrigin icon:[[DkTImageCache sharedCache] imageNamed:@"client" color:[UIColor lightGrayColor]]];
         self.clientField.helpText = @"Enter Client field (optional).";
         
-        _loginView = [[UIView alloc] initWithFrame:CGRectMake(self.contentView.frame.origin.x, self.contentView.frame.origin.y, self.usernameField.frame.size.width, CGRectGetMaxY(self.clientField.frame)-self.usernameField.frame.origin.x)];
+        _loginView = [[UIView alloc] initWithFrame:LOGIN_FRAME];
         _loginView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         
         [_loginView addSubview:self.usernameField];
         [_loginView addSubview:self.passwordField];
         [_loginView addSubview:self.clientField];
+        
+        
+        self.dismissKeyboardTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissKeyboard:)];
+        self.dismissKeyboardTap.cancelsTouchesInView = FALSE;
+        [self.view addGestureRecognizer:self.dismissKeyboardTap];
+        
     }
     
     return _loginView;
@@ -126,9 +201,9 @@
     // Dispose of any resources that can be recreated.
 }
 
--(UITextField *) textFieldWithPassword:(BOOL)password placeholder:(NSString *)placeholder origin:(CGPoint)origin icon:(UIImage *)icon
+-(DkTTextField *) textFieldWithPassword:(BOOL)password placeholder:(NSString *)placeholder origin:(CGPoint)origin icon:(UIImage *)icon
 {
-    UITextField *textField = [[UITextField alloc] initWithFrame:CGRectMake(0,0,self.view.frame.size.width*.9, 32)];
+    DkTTextField *textField = [[DkTTextField alloc] initWithFrame:CGRectMake(0,0,self.view.frame.size.width*.9, 32)];
     textField.placeholder = placeholder;
     textField.clearsOnBeginEditing = YES;
     textField.secureTextEntry = password;
@@ -136,12 +211,13 @@
     frame.origin = origin;
     textField.frame = frame;
     textField.delegate = self;
-    textField.backgroundColor = kInactiveColor;
+    textField.backgroundColor = [UIColor inactiveColor];
     textField.layer.cornerRadius = 5.0;
     textField.font = [UIFont fontWithName:kLightFont size:12];
     textField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
     textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
     textField.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    textField.returnKeyType = UIReturnKeyDone;
     
     if(icon)
     {
@@ -162,75 +238,103 @@
 -(void) handleLogin:(BOOL)success
 {
     
-    [MBProgressHUD hideAllHUDsForView:self.view animated:YES];
+    [MBProgressHUD hideAllHUDsForView:self.contentView animated:YES];
     
     if(success)
     {
         
+        _status = DkTLoggedIn;
         
-        [((DkTSidePanelController *)self.parentViewController) resignWithCompletion:^(BOOL finished) {
+       if(!self.modal) [((DkTSidePanelController *)self.parentViewController) resignWithCompletion:^(BOOL finished) {
             
-            
-            [self toggleLoggedInView:YES];
+           self.loggedInView = nil;
+           
+           [[NSNotificationCenter defaultCenter] postNotificationName:@"loginSuccessful" object:nil];
+           
+           if(self.isViewLoaded)
+           {
+               dispatch_async(dispatch_get_main_queue(), ^{
+                   [self toggleLoggedInView:YES];
+               });
+           }
         }];
+        
+        else
+        {
+            if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) [self.parentViewController dismissPopupViewControllerWithanimationType:MJPopupViewAnimationSlideBottomBottom];
+            
+            else
+            {
+               UIViewController *dvc = [UIApplication sharedApplication].keyWindow.rootViewController.presentedViewController;
+                [dvc dismissViewControllerAnimated:YES completion:nil];
+            }
+        }
+        
         
     }
     
     else
     {
-        UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Login Error" message:@"Error Logging Into PACER. Please check username and password." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [errorAlert show];
-        self.view.hidden = NO;
-    }
-}
-+(void) presentAsPopover:(UIViewController *)viewController size:(CGSize)size
-{
-    DkTLoginViewController *login = [[DkTLoginViewController alloc] init];
-    
-    
-    login.view.layer.cornerRadius = 5.0;
-    
-    
-    for(UIView *subview in viewController.view.subviews)
-    {
         
-        subview.userInteractionEnabled = NO;
-        subview.alpha = .3;
+        _status = DkTLoggedOut;
+        
+        DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Login Error" andMessage:@"Error logging into PACER. Check username and password?"];
+        
+        [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+        
+            [alertView dismissAnimated:YES];
+            
+        }];
+        
+        [alertView show];
+        
     }
-    
-    [viewController addChildViewController:login];
-    [viewController.view addSubview:login.view];
-    login.view.center = CGPointMake(viewController.view.center.x, viewController.view.center.y*.66);
-    
 }
 
 -(UIButton *) loginButton
 {
     if(_loginButton == nil)
     {
-        NSArray *colors = @[kActiveColor, kInactiveColor];
+        NSArray *colors = @[[UIColor activeColor], [UIColor inactiveColor]];
         _loginButton = [FSButton buttonWithIcon:kLoginButtonImage colors:colors title:@"Login" actionBlock:^{
             
-            if(_selectedSession != nil)
+            if(_selectedSession != nil && self.usersView.superview)
             {
-                //hud.color = kActiveColor;
-                [[PACERClient sharedClient] loginForSession:_selectedSession sender:self];
+                if ([[PACERClient sharedClient] checkNetworkStatusWithAlert:YES])
+                {
+                    MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.contentView animated:YES];
+                    hud.color = [UIColor clearColor];
+                    [[PACERClient sharedClient] loginForSession:_selectedSession sender:self];
+                }
             }
             else if(self.usernameField.text.length < 1)
             {
-                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Input Error" message:@"Please type in a username." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                [errorAlert show];
+                DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Input Error" andMessage:@"Please enter a username."];
+                
+                [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                    
+                    [alertView dismissAnimated:YES];
+                    
+                }];
+                
+                [alertView show];
             }
             
             else if(self.passwordField.text.length < 1)
             {
-                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Input Error" message:@"Please type in a password" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                [errorAlert show];
+                DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Input Error" andMessage:@"Please enter a password."];
+                
+                [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                    
+                    [alertView dismissAnimated:YES];
+                    
+                }];
+                
+                [alertView show];
             }
             
-            else
+            else if ([[PACERClient sharedClient] checkNetworkStatusWithAlert:YES])
             {
-                
                 DkTUser *newUser = [[DkTUser alloc] init];
                 newUser.username = self.usernameField.text;
                 newUser.password = self.passwordField.text;
@@ -238,7 +342,8 @@
                 session.user = newUser;
                 session.client = (self.clientField.text.length > 0) ? self.clientField.text : @"";
                 [[PACERClient sharedClient] loginForSession:session sender:self];
-                
+                MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.contentView animated:YES];
+                hud.color = [UIColor clearColor];
             }
             
         }];
@@ -246,85 +351,88 @@
         _loginButton.titleLabel.font = [UIFont fontWithName:kMainFont size:16];
         _loginButton.layer.cornerRadius = 5.0;
         
-        CGFloat width = self.clientField.frame.size.width*.9;
-        _loginButton.frame = CGRectMake(CGRectGetMaxX(self.clientField.frame)-width, CGRectGetMaxY(self.clientField.frame)+self.clientField.frame.size.height, width, 50);
+        CGFloat width = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? self.clientField.frame.size.width*.9 : self.clientField.frame.size.width*.7;
+        _loginButton.frame = CGRectMake(self.loginView.center.x - width/2., CGRectGetMaxY(self.clientField.frame)+self.clientField.frame.size.height/.9-(self.modal*10), width, 50-(self.modal*15));
         _loginButton.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _loginButton.imageView.transform = CGAffineTransformMakeScale(.5, .5);
         _loginButton.helpText = @"Login to PACER";
+        
     }
     
     return _loginButton;
 }
 
--(UIButton *) sessionButton
+
+-(void) toggleUserView:(BOOL)visible
 {
-    if(_sessionButton == nil) {
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+
+        if(visible)
+        {
+            [self.loggedInView removeFromSuperview];
+            [self.loginView removeFromSuperview];
+            self.recentSessions = [self getRecentSessions];
+            [self.contentView addSubview:self.usersView];
+            [self.usersView reloadData];
+            self.loginButton.hidden = NO;
+        }
         
-        NSArray *colors = @[kActiveColor, kInactiveColor];
-        
-        FSButton *sessionButton = [FSButton buttonWithIcon:kSessionButtonImage colors:colors title:@"" actionBlock:^{
+        else
+        {
+            [self.usersView removeFromSuperview];
             
-            [self toggleUserView];
-        }];
+            if (self.panel == DkTLoggedInPanelVisible)
+            {
+                if(self.loggedInView.superview == nil) [self.contentView addSubview:self.loggedInView];
+                self.loginButton.hidden = YES;
+            }
+            
+            if (self.panel == DkTLoginPanelVisible)
+            {
+                if(self.loginView.superview == nil) [self.contentView addSubview:self.loginView];
+                self.loginButton.hidden = NO;
+            }
+            
+        }
         
-        CGFloat width = self.clientField.frame.size.width*.075;
-        sessionButton.layer.cornerRadius = 5.0;
-        sessionButton.frame = CGRectMake(CGRectGetMinX(self.clientField.frame), CGRectGetMaxY(self.clientField.frame)+self.clientField.frame.size.height, width, 50);
-        _sessionButton = sessionButton;
-        _sessionButton.helpText = @"Login as a recent user";
+        [self.contentView setNeedsLayout];
         
-    }
+    });
+        
     
-    return _sessionButton;
-}
-
--(void) toggleUserView
-{
-    if([self.usersView superview] == nil)
-    {
-        _activeView.hidden = YES;
-        self.recentSessions = [self getRecentSessions];
-        [self.usersView reloadData];
-        [self.contentView addSubview:self.usersView];
-        
-    }
-    
-    else
-    {
-        _activeView.hidden = NO;
-        [self.usersView removeFromSuperview];
-    }
 
 
-    [self.sessionButton invert];
 }
 
 -(void) toggleLoggedInView:(BOOL)visible
 {
-    
-    if(visible)
-    {
-        if([self.usersView superview])
+    dispatch_async(dispatch_get_main_queue(), ^{
+        
+        if(visible)
         {
-            [self.sessionButton invert]; [self.usersView removeFromSuperview];
+            [self.usersView removeFromSuperview];
+            [self.loginView removeFromSuperview];
+            self.loginButton.hidden = YES;
+            [self.contentView addSubview:self.loggedInView];
+            self.panel = DkTLoggedInPanelVisible;
+            
         }
         
-        else [self.loginView removeFromSuperview];
-                
-        [self.contentView addSubview:self.loggedInView];
-        
-        
-        _activeView = self.loggedInView;
-        
-    }
+        else
+        {
+            [self.loggedInView removeFromSuperview];
+            self.loggedInView = nil;
+            NSLog(@"%@",[self.loginView.superview.class description]);
+            if(self.loginView.superview == nil)
+            {
+                [self.contentView addSubview:self.loginView];
+            }
+            self.loginButton.hidden = NO;
+            self.panel = DkTLoginPanelVisible;
+        }
+    });
     
-    else
-    {
-        [self.loggedInView removeFromSuperview];
-        [self.contentView addSubview:self.loginView];
-        self.loggedInView = nil;
-        _activeView = self.loginView;
-    }
 
 }
 
@@ -335,8 +443,9 @@
     NSArray *sessions = [[DkTSessionManager sharedManager] sessions];
     
     int max = MIN(sessions.count, 4);
+    int i;
     
-    for(int i = 0; i < max; ++i)
+    for(i = 0; i < max; i++)
     {
         [recentSessions addObject:[sessions objectAtIndex:i]];
     }
@@ -352,23 +461,28 @@
         
         _usersView.rowHeight = 45;
         
+        self.recentSessions = [self getRecentSessions];
+        
         CGRect frame;
         frame.size.height = _usersView.rowHeight * MAX(self.recentSessions.count,1);
-        frame.size.width = self.usernameField.frame.size.width;
-        frame.origin = self.usernameField.frame.origin;
-        _usersView.frame = frame;
+        frame.size.width = self.view.frame.size.width*.9;
+        frame.origin = CGPointMake(self.view.frame.size.width*.05, 0);
         
+        _usersView.frame = frame;
         _usersView.dataSource = self;
         _usersView.delegate = self;
         _usersView.scrollEnabled = YES;
         _usersView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _usersView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
         _usersView.scrollEnabled = NO;
+        
         UIView *backgroundView = [[UIView alloc] init];
-        backgroundView.backgroundColor = kInactiveColor;
+        backgroundView.backgroundColor = [UIColor inactiveColor];
         [_usersView setBackgroundView:backgroundView];
         _usersView.clipsToBounds = YES;
         _usersView.layer.cornerRadius = 5.0;
+        
+        IOS7(_usersView.separatorInset = UIEdgeInsetsMake(0, 0, 0, 0);,  );
     }
     
     return _usersView;
@@ -383,10 +497,10 @@
     if(cell == nil)
     {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"Cell"];
-        cell.contentView.helpText = @"Select a recent user/client and click the Login button to login as a recent user (no password needed).";
+        cell.contentView.helpText = @"Select a recent user/client and touch the Login button.";
         cell.textLabel.font = [UIFont fontWithName:kLightFont size:16];
-        cell.textLabel.backgroundColor = kInactiveColor;
-        cell.textLabel.textColor = kDarkTextColor;
+        cell.textLabel.backgroundColor = [UIColor inactiveColor];
+        cell.textLabel.textColor = [UIColor darkerTextColor];
         cell.detailTextLabel.font = [UIFont fontWithName:kContrastFont size:12];
         cell.detailTextLabel.backgroundColor = [UIColor clearColor];
         cell.selectionStyle = UITableViewCellSelectionStyleGray;
@@ -423,6 +537,7 @@
     {
         
         cell.textLabel.text = @"No recent logins.";
+        cell.contentView.backgroundColor =  [UIColor inactiveColor];
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
         return cell;
     }
@@ -431,12 +546,13 @@
     else
     {
         DkTSession *session = [self.recentSessions objectAtIndex:indexPath.row];
-        cell.contentView.backgroundColor = (indexPath.row%2 == 0) ? kInactiveColor : kInactiveColorDark;
+        cell.contentView.backgroundColor =  [UIColor inactiveColor];
         
-        cell.imageView.image = [kDocketImage imageWithColor:kActiveColor];
+        cell.imageView.image = [kUserImage imageWithColor:[UIColor activeColor]];
         cell.imageView.transform = CGAffineTransformMakeScale(.5, .5);
         cell.textLabel.text = session.user.username;
-        cell.detailTextLabel.textColor = (indexPath.row%2 == 0) ? kActiveColor : kInactiveColor;
+        cell.detailTextLabel.text = (session.client.length > 0) ? session.client : nil;
+        cell.detailTextLabel.textColor = [UIColor activeColor];
     }
     
     return cell;
@@ -452,40 +568,140 @@
     return MAX(self.recentSessions.count, 1);
 }
 
+-(void)setModal:(BOOL)modal
+{
+    _modal = modal;
+    self.loginButton = nil;
+}
+
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    _selectedSession = [self.recentSessions objectAtIndex:indexPath.row];
+    if(self.recentSessions.count > 0)  _selectedSession = [self.recentSessions objectAtIndex:indexPath.row];
 }
+
+-(void) handleTap:(id)sender
+{
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"forceLogout" object:nil];
+    [self viewWillAppear:NO];
+}
+
+-(void) dismissKeyboard:(id)sender
+{
+    [self.loginView endEditing:YES];
+}
+
 
 -(UIView *) loggedInView
 {
     if(_loggedInView == nil)
     {
-        _loggedInView = [[UIView alloc] initWithFrame:self.loginView.frame];
+        CGRect frame = CGRectInset(LOGIN_FRAME,10,15);
+        frame.origin.y += PAD_OR_POD(15, 10);
+        _loggedInView = [[UIView alloc] initWithFrame:frame];
+        _loggedInView.backgroundColor = [UIColor activeColor];
+        _loggedInView.layer.cornerRadius = 5.0;
         
-        UILabel *loggedInAs = [[UILabel alloc] initWithFrame:self.usernameField.frame];
-        loggedInAs.text = [NSString stringWithFormat:@"User: %@",[DkTSession currentSession].user.username];
-        loggedInAs.font = [UIFont fontWithName:kContrastFont size:14];
+        
+        UIView *userLine = [[UIView alloc] initWithFrame:CGRectMake(5, 10, _loggedInView.frame.size.width, 40)];
+        
+        UIImageView *userImage = [[UIImageView alloc] initWithImage:[kUserImage imageWithColor:[UIColor inactiveColor]]];
+        
+        
+        UILabel *loggedInAs = [[UILabel alloc] initWithFrame:CGRectZero];
+        loggedInAs.text = [DkTSession currentSession].user.username;
+        loggedInAs.font = [UIFont fontWithName:kContrastFont size:16];
         loggedInAs.backgroundColor = [UIColor clearColor];
+        loggedInAs.textColor = [UIColor inactiveColor];
+        userImage.frame = CGRectMake(0, 0, self.usernameField.frame.size.height*.8, self.usernameField.frame.size.height*.8);
+        loggedInAs.frame = CGRectMake(CGRectGetMaxX(userImage.frame), 0, 300, userImage.frame.size.height);
+        [userLine addSubview:loggedInAs];
+        [userLine addSubview:userImage];
+        [loggedInAs sizeToFit];
         
-        UILabel *client = [[UILabel alloc] initWithFrame:self.passwordField.frame];
-        client.text = [NSString stringWithFormat:@"Client: %@",[DkTSession currentSession].client];
-        client.font = [UIFont fontWithName:kContrastFont size:14];
+        
+        UIView *clientLine = [[UIView alloc] initWithFrame:CGRectMake(25, _loggedInView.frame.size.height*.4, _loggedInView.frame.size.width, 40)];
+        
+        UIImageView *clientImage = [[UIImageView alloc] initWithImage:[[UIImage imageNamed:@"client"] imageWithColor:[UIColor inactiveColor]]];
+        clientImage.frame = CGRectMake(0, 0, self.passwordField.frame.size.height*.4, self.passwordField.frame.size.height*.4);
+
+        
+        UILabel *client = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(clientImage.frame), 0, 300, clientImage.frame.size.height)];
+        client.text = [DkTSession currentSession].client;
+        if(client.text.length == 0) client.text = @" (no client)";
+        client.font = [UIFont fontWithName:kContrastFont size:10];
+        client.textColor = [UIColor inactiveColor];
         client.backgroundColor = [UIColor clearColor];
         
-        CostLabel *cost = [[CostLabel alloc] initWithFrame:self.clientField.frame];
+        [clientLine addSubview:client];
+        [clientLine addSubview:clientImage];
         
-        cost.text = [NSString stringWithFormat:@"Cost: %@",[[DkTSession currentSession] costString]];
-        cost.font = [UIFont fontWithName:kContrastFont size:14];
-        cost.backgroundColor = [UIColor clearColor];
-        [[DkTSession currentSession] addObserver:cost forKeyPath:@"costString" options:NSKeyValueObservingOptionNew context:nil];
+        //UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+        //tap.numberOfTapsRequired = 1;
+        //[_loggedInView addGestureRecognizer:tap];
+        _loggedInView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        [_loggedInView addSubview:userLine];
+        [_loggedInView addSubview:clientLine];
         
-        [_loggedInView addSubview:loggedInAs];
-        [_loggedInView addSubview:client];
-        [_loggedInView addSubview:cost];
+    
+        FSButton *logout = [FSButton buttonWithIcon:[UIImage imageNamed:@"unlock"] colors:@[[UIColor inactiveColor], [UIColor activeColor]] title:@"" actionBlock:^{
+            [self handleTap:nil];
+        }];
+        CGRect fr = CGRectMake(_loggedInView.frame.size.width-60, _loggedInView.frame.size.height-50,60,50);
+        logout.frame = fr;
+        logout.autoresizingMask = UIViewAutoresizingFlexibleRightMargin;
+        logout.helpText = @"Logout";
+        [logout setCornerRadius:5.0f];
+    
+        [_loggedInView addSubview:logout];
+    }
+    return _loggedInView;
+}
+
+
+-(void) cookieDidExpireWithReveal:(BOOL)reveal
+{
+    [DkTSession nullifyCurrentSession];
+    
+    [self toggleLoggedInView:NO];
+    
+    if(reveal)
+    {
+        [self.parentViewController.revealController showViewController:self.parentViewController animated:YES completion:^(BOOL finished) {
+            
+        }];
     }
     
-    return _loggedInView;
+}
+
+-(void) viewWillAppear:(BOOL)animated
+{
+    if( (self.status == DkTLoggedOut) && (self.panel == DkTLoggedInPanelVisible) )
+    {
+        [self toggleLoggedInView:NO];
+    }
+    
+    if( (self.status == DkTLoggedIn) && (self.panel == DkTLoginPanelVisible) )
+    {
+        [self toggleLoggedInView:YES];
+    }
+    
+    if(self.status == DkTLoggingIn)
+    {
+        [self displayLoggingIn];
+    }
+}
+-(void) forceLogout:(id)sender
+{
+    _status = DkTLoggedOut;
+}
+
+-(void) dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+-(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event{
+    [self.view endEditing:YES];
 }
 
 @end

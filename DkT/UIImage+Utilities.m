@@ -1,8 +1,5 @@
 //
 //  UIImage+Utilities.h
-//  DkTp
-//
-//  Created by Matthew Zorn on 5/26/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
 
@@ -13,8 +10,7 @@
 
 - (UIImage *)imageWithColor:(UIColor *)color
 {
-    UIGraphicsBeginImageContextWithOptions(self.size, YES, [[UIScreen mainScreen] scale]);
-    
+ 
     CGRect contextRect;
     contextRect.origin.x = 0.0f;
     contextRect.origin.y = 0.0f;
@@ -53,9 +49,20 @@
     
     UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
+    
     return img;
 }
 
++(UIImage *) imageOfColor:(UIColor *)color size:(CGSize)size {
+    UIGraphicsBeginImageContext(size);
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    CGRect rect = CGRectMake(0, 0, size.width, size.height);
+    CGContextSetFillColorWithColor(ctx, color.CGColor);
+    CGContextFillRect(ctx, rect);
+    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return img;
+}
 +(UIImage *) imageWithView:(UIView *)view
 {
     UIGraphicsBeginImageContext(view.bounds.size);
@@ -79,6 +86,7 @@
 +(UIImage *) imageWithString:(NSString *)str font:(UIFont *)font size:(CGSize)size color:(UIColor *)color
              backgroundColor:(UIColor *)bgColor
 {
+    
     UIGraphicsBeginImageContext(size);
     CGContextRef context = UIGraphicsGetCurrentContext();
     
@@ -102,5 +110,6 @@
     UIGraphicsEndImageContext();
     
     return img;
+    
 }
 @end

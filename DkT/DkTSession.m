@@ -14,12 +14,19 @@
     NSNumberFormatter *_formatter;
 }
 
+@synthesize user = _user;
+
 + (id)sharedInstance
 {
     static dispatch_once_t once;
     static id sharedInstance;
     dispatch_once(&once, ^{
         sharedInstance = [[DkTSession alloc] init];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:sharedInstance
+                                                 selector:@selector(forceLogout:)
+                                                     name:@"forceLogout"
+                                                   object:nil];
     });
     return sharedInstance;
 }
@@ -32,19 +39,30 @@
 
 +(void) setCurrentSession:(DkTSession *)session
 {
-    [[DkTSession sharedInstance] setUser:session.user];
-    [[DkTSession sharedInstance] setClient:session.client];
-    [[DkTSession sharedInstance] setCost:0];
+    DkTSession *currentSession = [DkTSession sharedInstance];
+    [currentSession setUser:session.user];
+    [currentSession setClient:session.client];
+    [currentSession setCost:0];
+}
+
++(void) nullifyCurrentSession
+{
+    DkTSession *currentSession = [DkTSession sharedInstance];
+    [currentSession setUser:[[DkTUser alloc] init]];
+    [currentSession setClient:@""];
+    [currentSession setCost:0];
 }
 
 - (id)init
 {
     self = [super init];
     {
-        self.user = [[DkTUser alloc] init];
+        
         self.client = @"";
         _formatter = [[NSNumberFormatter alloc] init];
-        [_formatter setNumberStyle:NSNumberFormatterCurrencyStyle];
+        [_formatter setNumberStyle:NSNumberFormatterDecimalStyle];
+        [_formatter setMinimumFractionDigits:2];
+        [_formatter setMaximumFractionDigits:2];
 
     }
     return self;
@@ -59,20 +77,27 @@
 
 -(void) setUser:(DkTUser *)currentUser
 {
-    if([currentUser.username isEqualToString:_user.username])
+    if([currentUser isEqual:self.user])
     {
         return;
     }
-    
-    else
-    {
-        _user = currentUser;
+   
+    _user = currentUser;
         
-        if([self.delegate respondsToSelector:@selector(didChangeUser:)])
-        {
-            [self.delegate didChangeUser:_user];
-        }
+    if([self.delegate respondsToSelector:@selector(didChangeUser:)])
+    {
+        [self.delegate didChangeUser:self.user];
     }
+}
+
+-(DkTUser *) user
+{
+    if(_user == nil)
+    {
+        _user = [[DkTUser alloc] init];
+    }
+    
+    return _user;
 }
 
 +(void) addCostForPages:(NSUInteger)pages
@@ -83,8 +108,19 @@
 -(void) setCost:(float)cost
 {
     _cost = cost;
-    _costString = [_formatter stringFromNumber:[NSNumber numberWithFloat:_cost]];
+    _costString = [NSString stringWithFormat:@"$   %@",[_formatter stringFromNumber:[NSNumber numberWithFloat:_cost]]];
 }
 
+-(void) forceLogout:(id)sender
+{
+    [self setUser:[[DkTUser alloc] init]];
+    [self setClient:@""];
+    [self setCost:0];
+}
+
+-(void) dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
 
 @end

@@ -8,39 +8,60 @@
 
 #import <Foundation/Foundation.h>
 #import "AFHTTPClient.h"
+#import "DkTDocket.h"
 
-@class DkTDocket, DkTDocketEntry, RECAPClient, DkTSearchViewController, DkTSession;
+typedef NS_OPTIONS(NSUInteger, PACERConnectivityStatus) {
+    PACERConnected = (1 << 0),
+    PACERConnectivityStatusNoInternet = (1 << 1),
+    PACERConnectivityStatusNotLoggedIn = (1 << 2)
+};
+
+@class DkTDocketEntry, RECAPClient, DkTSearchViewController, DkTSession, DKTAttachment;
 
 typedef void (^PACERDocLinkBlock)(id entry, id link);
 
 @protocol PACERClientProtocol <NSObject>
 
 @optional
--(void) handleDocket:(DkTDocket *)docket entries:(NSArray *)entries;
--(void) handleDocument:(DkTDocketEntry *)entry atPath:(NSString *)path;
--(void) handleLogin:(BOOL)success;
+
 -(void) postSearchResults:(NSArray *)results nextPage:(NSString *)nextPage;
--(void) handleDocumentsFromEntry:(DkTDocketEntry *)entry entries:(NSArray *)entries;
+
+-(void) handleDocket:(DkTDocket *)docket entries:(NSArray *)entries to:(NSString *)to from:(NSString *)from;
+-(void) handleDocument:(DkTDocketEntry *)entry atPath:(NSString *)path;
+-(void) handleSealedDocument:(DkTDocketEntry *)entry;
+-(void) handleDocketEntryError:(DkTDocketEntry *)entry;
+-(void) handleDocketError:(DkTDocket *)docket;
+-(void) handleLogin:(BOOL)success;
+-(void) handleDocumentsFromDocket:(DkTDocket *)docket entry:(DkTDocketEntry *)entry entries:(NSArray *)entries;
 -(void) handleDocLink:(DkTDocketEntry *)entry docLink:(NSString *)docLink;
+
 -(void) didDownloadDocketEntry:(DkTDocketEntry *)entry atPath:(NSString *)path;
 -(void) didDownloadDocketEntry:(DkTDocketEntry *)entry atPath:(NSString *)path cost:(BOOL)paid;
--(void) handleMultidocRequest:(DkTDocketEntry *)entry entries:(NSArray *)entries;
-@end
 
-@class DkTUser;
+-(void) setReceiptCookie;
+
+@end
 
 @interface PACERClient : AFHTTPClient
 
 +(id) sharedClient;
--(void) executeSearch:(NSDictionary *)searchParams sender:(DkTSearchViewController *)sender;
--(void) loginForSession:(DkTSession *)session sender:(UIViewController<PACERClientProtocol>*)sender;
--(void) getDocket:(DkTDocket *)docket sender:(UIViewController<PACERClientProtocol>*)sender;
--(void) getDocument:(DkTDocketEntry *)entry sender:(UIViewController<PACERClientProtocol>*)sender;
--(void) setUser:(DkTUser *)user;
--(void) getDocLink:(DkTDocketEntry *)entry sender:(UIViewController<PACERClientProtocol>*)sender;
++(PACERConnectivityStatus) connectivityStatus;
 
-@property (nonatomic, strong, readonly) DkTUser *user;
+-(BOOL) checkNetworkStatusWithAlert:(BOOL)alert;
+
+-(void) executeSearch:(NSDictionary *)searchParams sender:(DkTSearchViewController *)sender;
+
+-(void) loginForSession:(DkTSession *)session sender:(id<PACERClientProtocol>)sender;
+
+-(void) retrieveDocket:(DkTDocket *)docket sender:(id<PACERClientProtocol>)sender;
+-(void) retrieveDocket:(DkTDocket *)docket sender:(id<PACERClientProtocol>)sender to:(NSString *)to from:(NSString *)from;
+-(void) retrieveDocument:(DkTDocketEntry *)entry sender:(id<PACERClientProtocol>)sender docket:(DkTDocket *)docket;
+-(void) retrieveDocumentLink:(DkTDocketEntry *)entry sender:(id<PACERClientProtocol>)sender;
 
 @property (nonatomic, getter = isLoggedIn) BOOL loggedIn;
+
+@end
+
+@interface DkTURLRequest : NSMutableURLRequest
 
 @end

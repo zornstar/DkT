@@ -49,6 +49,27 @@
     [self setSelectedIndex:0];
 }
 
+-(void) viewWillAppear:(BOOL)animated
+{
+    /*A hack to change orientation if it starts in landscape
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{*/
+        
+        
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, .1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            if(UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation))
+            {
+                [self didRotateFromInterfaceOrientation:UIInterfaceOrientationPortrait];
+            }
+            
+            else if(UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation))
+            {
+                [self didRotateFromInterfaceOrientation:UIInterfaceOrientationLandscapeLeft | UIInterfaceOrientationLandscapeRight];
+            }
+        });
+        
+   // });
+}
 -(void) setupViewControllers
 {
     _viewControllers = [NSMutableArray arrayWithCapacity:3];
@@ -76,13 +97,13 @@
         _tabBar.sectionImages = @[kSearchImage, kBookmarkImage, kDocumentsImage];
         _tabBar.frame = frame;
         _tabBar.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleBottomMargin;
-        _tabBar.backgroundColor = kInactiveColor;
-        _tabBar.selectionIndicatorColor = kActiveColor;
-        _tabBar.textColor = kDarkTextColor;
-        _tabBar.selectedTextColor = kLightTextColor;
+        _tabBar.backgroundColor = [UIColor inactiveColor];
+        _tabBar.selectionIndicatorColor = [UIColor activeColor];
+        _tabBar.textColor = [UIColor darkerTextColor];
+        _tabBar.selectedTextColor = [UIColor lighterTextColor];
         _tabBar.type = HMSegmentedControlTypeCustom;
         _tabBar.selectionStyle = HMSegmentedControlSelectionStyleBox;
-        
+        [_tabBar addGestureRecognizer:[self longPress]];
         __weak typeof(self) weakSelf = self;
         
         [_tabBar setIndexChangeBlock:^(NSInteger index) {
@@ -137,6 +158,8 @@
     _horizontalFrame = CGRectMake(0, 0, _contentFrame.size.height, _contentFrame.size.width);
     [self.view addSubview:self.contentView];
     _center = self.contentView.center;
+    
+    self.view.backgroundColor = [UIColor activeColor];
 }
 
 - (void)didReceiveMemoryWarning
@@ -175,13 +198,15 @@
         CGRect newFrame = self.tabBar.frame;
         newFrame.origin = CGPointMake(applicationFrame.size.height, 0);
         self.tabBar.frame  = newFrame;
-       // self.tabBar.layer.anchorPoint = CGPointMake(0, 0);
-       //self.tabBar.layer.transform = CATransform3DMakeRotation(M_PI_2, 1, 0, 0);
         tabBarImageView.frame = CGRectMake(tabBarImageView.frame.origin.x, 2*CGRectGetMaxY(tabBarImageView.frame), tabBarImageView.frame.size.width, tabBarImageView.frame.size.height);
         
     } completion:^(BOOL finished) {
-        
         [tabBarImageView removeFromSuperview];
+        
+        if([self.delegate respondsToSelector:@selector(didFinishRotationAnimation:)])
+        {
+            [self.delegate didFinishRotationAnimation:fromInterfaceOrientation];
+        }
     }];
         
     
@@ -207,6 +232,11 @@
         } completion:^(BOOL finished) {
             
             [tabBarImageView removeFromSuperview];
+            
+            if([self.delegate respondsToSelector:@selector(didFinishRotationAnimation:)])
+            {
+                [self.delegate didFinishRotationAnimation:fromInterfaceOrientation];
+            }
         }];
         
     }
@@ -219,8 +249,30 @@
     return _tabBarFrame;
 }
 
--(CGRect) verticalTabFrame
+-(UILongPressGestureRecognizer *) longPress
+{
+    return [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+}
+-(void) handleLongPress:(UILongPressGestureRecognizer *)sender
 {
     
+    if(sender.state == UIGestureRecognizerStateBegan)
+    {
+        CGPoint point = [sender locationInView:self.tabBar];
+        
+        if (CGRectContainsPoint(self.tabBar.bounds, point)) {
+            
+            NSInteger segment = point.x / self.tabBar.segmentWidth;
+            
+            if (segment == 1) {
+                
+                DkTBookmarkViewController *bvc = [self.viewControllers objectAtIndex:1];
+                [bvc updateAllBookmarks];
+            }
+        }
+        
+    }
+    
 }
+
 @end

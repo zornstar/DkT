@@ -8,7 +8,6 @@
 
 #import <UIKit/UIKit.h>
 #import "DkTBookmarkManager.h"
-#import "DkTBookmarkCell.h"
 #import "PACERClient.h"
 
 
@@ -17,5 +16,7 @@
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) DkTBookmarkManager *bookmarkManager;
 @property (nonatomic, strong, readonly) NSMutableArray *bookmarks;
+
+-(void) updateAllBookmarks;
 
 @end

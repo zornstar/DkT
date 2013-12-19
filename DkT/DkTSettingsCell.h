@@ -19,11 +19,9 @@ DkTSettingsIconPosition;
 
 @property (nonatomic, strong) UIImage *image;
 @property (nonatomic, strong) UILabel *label;
+@property (nonatomic) BOOL inverted;
 
 -(void) setImage:(UIImage *)image;
 
--(void) expandToFrame:(CGRect)frame iconPosition:(DkTSettingsIconPosition)position animationInterval:(NSTimeInterval)interval completion:(void (^)(BOOL finished))completion;
-
--(void) invert;
 
 @end

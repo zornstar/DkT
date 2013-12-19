@@ -14,6 +14,147 @@
 
 @implementation PACERParser
 
++(NSArray *)parseAppellateMultiDoc:(DkTDocketEntry *)entry html:(NSData *)html
+{
+    TFHpple *hpple = [[TFHpple alloc] initWithHTMLData:html];
+    NSMutableArray *entries = [NSMutableArray array];
+    
+    NSArray *tables = [hpple searchWithXPathQuery:@"//table"];
+    TFHppleElement *table = [tables lastObject];
+    
+    NSArray *rows = [table childrenWithTagName:@"tr"];
+    
+    for(int i = 1; i < rows.count; ++i)
+    {
+            
+            DKTAttachment *e = [[DKTAttachment alloc] init];
+            TFHppleElement *row = [rows objectAtIndex:i];
+            
+            NSArray *tds = [row childrenWithTagName:@"td"];
+            
+            e.entryNumber = entry.entryNumber;
+            e.attachment = [NSNumber numberWithUnsignedInt:((TFHppleElement *)[tds objectAtIndex:0]).text.integerValue];
+            
+            TFHppleElement *linkElement = [tds objectAtIndex:1];
+            NSString *link = [[linkElement firstChildWithTagName:@"a"] objectForKey:@"href"];
+            
+            if([link rangeOfString:@"docs1"].location != NSNotFound)
+            {
+                [e.urls setObject:[link copy] forKey:PACERDOCURLKey];
+            }
+            
+            e.summary = [[tds objectAtIndex:2] text];
+            e.docket = entry.docket;
+        
+        [entries addObject:e];
+        
+    }
+    
+    return entries;
+}
+
++(NSArray *)parseMultiDoc:(DkTDocketEntry *)entry html:(NSData *)html
+{
+    NSMutableArray *entries = [NSMutableArray array];
+    TFHpple *hpple = [[TFHpple alloc] initWithHTMLData:html];
+    
+    TFHppleElement *table = [hpple peekAtSearchWithXPathQuery:@"//table"];
+   
+    NSArray *rows;
+    
+    NSArray *tbody = [table childrenWithTagName:@"tbody"];
+    
+    if(tbody.count > 0) rows = [[tbody objectAtIndex:0] childrenWithTagName:@"tr"];
+    
+    else rows = [table childrenWithTagName:@"tr"];
+    
+    TFHppleElement *firstRowElement = [rows objectAtIndex:0];
+    
+    DKTAttachment *firstEntry = [[DKTAttachment alloc] init];
+    firstEntry.summary = [entry summary];
+    firstEntry.docket = entry.docket;
+    NSArray *tdArray = [firstRowElement childrenWithTagName:@"td"];
+    if(tdArray.count == 0)
+    {
+        firstRowElement = [rows objectAtIndex:1];
+        tdArray = [firstRowElement childrenWithTagName:@"td"];
+    }
+    
+    TFHppleElement *linkElement =  [[tdArray objectAtIndex:0] firstChildWithTagName:@"a"];
+    int firstEntryNumber = [linkElement.text integerValue];
+    firstEntry.entryNumber = [NSNumber numberWithUnsignedInt:firstEntryNumber];
+    firstEntry.attachment = [NSNumber numberWithInt:0];
+    
+    NSString *link = [linkElement objectForKey:@"href"];
+    
+    
+    
+    if(link)
+    {
+        if([link hasPrefix:@"/"])
+        {
+            link = [[firstEntry courtLink] stringByAppendingPathComponent:link];
+        }
+        
+        if([link rangeOfString:@"doc1"].location != NSNotFound)
+        {
+            [firstEntry.urls setObject:[link copy] forKey:PACERDOCURLKey];
+        }
+        
+        else if ([link rangeOfString:@"cgi"].location != NSNotFound)
+        {
+            
+            [firstEntry.urls setObject:[link copy] forKey:PACERCGIURLKey];
+        }
+    }
+    
+    firstEntry.pages = [[tdArray objectAtIndex:1] text];
+    
+    [entries addObject:firstEntry];
+    
+    for(int i = 3; i < rows.count-2; i++)
+    {
+        TFHppleElement *tr = [rows objectAtIndex:i];
+        NSArray *tds = [tr childrenWithTagName:@"td"];
+        DKTAttachment *attachment = [[DKTAttachment alloc] init];
+        
+        TFHppleElement *linkElement =  [[tds objectAtIndex:0] firstChildWithTagName:@"a"];
+        attachment.entryNumber = [NSNumber numberWithUnsignedInt:firstEntryNumber];
+        attachment.attachment = [NSNumber numberWithUnsignedInt:[linkElement.text integerValue]];
+        attachment.docket = entry.docket;
+        
+        NSString *link = [linkElement objectForKey:@"href"];
+        
+        if(link)
+        {
+            if([link hasPrefix:@"/"])
+            {
+                link = [[firstEntry courtLink] stringByAppendingPathComponent:link];
+            }
+            
+            if([link rangeOfString:@"doc1"].location != NSNotFound)
+            {
+                [attachment.urls setObject:[link copy] forKey:PACERDOCURLKey];
+            }
+            
+            else if ([link rangeOfString:@"cgi"].location != NSNotFound)
+            {
+                
+                [attachment.urls setObject:[link copy] forKey:PACERCGIURLKey];
+            }
+        }
+        
+        attachment.summary =  [(TFHppleElement *)[tds objectAtIndex:1] raw];
+        attachment.pages =  [[tds objectAtIndex:2] text];
+        attachment.docket = entry.docket;
+        [entries addObject:attachment];
+        
+    }
+    
+    return entries;
+    
+}
+
 +(NSString *)parseDocketSheet:(NSData *)html courtType:(PACERCourtType)type
 {
     if(type == PACERCourtTypeCivil)
@@ -56,24 +197,53 @@
 }
 
 +(NSMutableArray *) parseSearchResults:(NSData *)html
-//:(NSData *)data recursively:(BOOL)dive
 {
-    
+
     TFHpple *hpple = [[TFHpple alloc] initWithHTMLData:html];
     TFHppleElement *details = [hpple peekAtSearchWithXPathQuery:@"//div[@id='details']"];
     NSMutableArray *returnArray = [NSMutableArray array];
-    NSArray *tables = [details childrenWithTagName:@"table"];
-    
-    for(TFHppleElement *table in tables)
+    NSArray *_tables = [details childrenWithTagName:@"table"];
+    NSMutableArray *tables = [NSMutableArray array];
+    for(TFHppleElement *table in _tables)
     {
+        [tables addObject:table];
+        
+        NSArray *chtables = [table childrenWithTagName:@"table"];
+        
+        while (chtables.count > 0) {
+            
+            for(TFHppleElement *chtable in chtables)
+            {
+                if([[chtable objectForKey:@"align"] isEqualToString:@"center"])
+                {
+                    [tables addObject:chtable];
+                    chtables = [chtable childrenWithTagName:@"table"];
+                    break;
+                }
+                
+            }
+        }
+        
+    }
+    for(TFHppleElement *table in tables) {
+    
         NSArray *rows;
         
         if(tables.count > 1)
         {
-            TFHppleElement *tbody = [[table childrenWithTagName:@"tbody"] objectAtIndex:0];
-            rows = [tbody childrenWithTagName:@"tr"];
+            NSArray *tbodies = [table childrenWithTagName:@"tbody"];
+            
+            if(tbodies.count == 0) rows = [table childrenWithTagName:@"tr"];
+            
+            else {
+                
+                
+                TFHppleElement *tbody = [tbodies objectAtIndex:0];
+                
+                rows = [tbody childrenWithTagName:@"tr"];
+            }
         }
-        
+    
         else rows = [table childrenWithTagName:@"tr"];
             
         TFHppleElement *firstRow = [rows objectAtIndex:0];
@@ -83,263 +253,374 @@
             
         for(int r = 1; r < rows.count; ++r) {
             
-            DkTDocket *result = [[DkTDocket alloc] init];
-            TFHppleElement *e = [rows objectAtIndex:r];
-            NSString *str;
-            NSArray *children = [e children];
+            @autoreleasepool {
                 
-            for(int i = 0; i < children.count; ++i) {
+                DkTDocket *result = [[DkTDocket alloc] init];
+                TFHppleElement *e = [rows objectAtIndex:r];
+                
+                NSArray *children = [e childrenWithTagName:@"td"];
+                
+                for(int i = 0; i < children.count; ++i) {
                     
-                TFHppleElement *child = [children objectAtIndex:i];
-                    
-                str = [child objectForKey:@"class"];
-                    
-                if([str isEqualToString:@"cs_title"]) result.name = child.text;
-                    
-                if([str isEqualToString:@"cs_date"]) if(result.date.length < 1) result.date = child.text; //We want the date filed only, which is the first date.
-                    
-                if([str isEqualToString:@"court_id"]) result.court = child.text;
-                    
-                if([str isEqualToString:@"case"]) {
+                    @autoreleasepool {
                         
-                    TFHppleElement *aChild = [[child childrenWithTagName:@"a"] objectAtIndex:0];
-                    result.link = [aChild objectForKey:@"href"];
-                    result.case_num = aChild.text;
+                        TFHppleElement *child = [children objectAtIndex:i];
+                        
+                        NSString *str = [child objectForKey:@"class"];
+                        
+                        if([str isEqualToString:@"cs_date"]) if(result.date.length < 1) result.date = child.text; //We want the date filed only, which is the first date.
+                        
+                        if([str isEqualToString:@"court_id"]) result.court = child.text;
+                        
+                        if([str isEqualToString:@"case"]) {
+                            
+                            TFHppleElement *aChild = [[child childrenWithTagName:@"a"] objectAtIndex:0];
+                            result.link = [aChild objectForKey:@"href"];
+                            result.case_num = aChild.text;
+                            result.name = [aChild objectForKey:@"title"];
+                            
+                        }
+                        
+                        TFHppleElement *td1 = [children objectAtIndex:2];
+                        NSArray *children = [td1 childrenWithTagName:@"a"];
+                        
+                        if(children.count > 0)
+                        {
+                            TFHppleElement *caseidelement = [children objectAtIndex:0];
+                            result.cs_caseid = [[[caseidelement objectForKey:@"href"] componentsSeparatedByString:@"="] lastObject];
+                        }
+                        
+                        else if ([result.link rangeOfString:@"iquery"].location !=NSNotFound)
+                        {
+                            NSArray *components = [result.link componentsSeparatedByString:@"?"];
+                            
+                            if(components.count > 1)
+                            {
+                                result.cs_caseid = [components lastObject];
+                            }
+                        }
+                        
+                    }
+                    
+                    
                 }
+                
+                [self cleanName:result];
+                if([result isMinimallyValid])[itemsArray addObject:result];
+                
             }
-            [itemsArray addObject:result];
-        }
             
+        }
+        
+        
+        
             NSDictionary *tableDict = @{@"name":title, @"items":itemsArray};
             [returnArray addObject:tableDict];
     }
     
     return returnArray;
 }
-    
 
-
-+(NSArray *)parseAppellateDocket:(DkTDocket *)docket xml:(NSData *)xml
++(void) cleanName:(DkTDocket *)docket
 {
-    GDataXMLDocument *doc = [[GDataXMLDocument alloc] initWithData:xml options:0 error:nil];
+    NSString *name = docket.name;
+    NSRange r;
     
-    GDataXMLElement *docketTextsElement = [[doc.rootElement elementsForName:@"docketTexts"] objectAtIndex:0];
+    while ((r = [name rangeOfString:@"<[^>]+>" options:NSRegularExpressionSearch]).location != NSNotFound)
+        name = [name stringByReplacingCharactersInRange:r withString:@""];
     
-    NSMutableArray *returnArray = [NSMutableArray array];
+    r = [docket.name rangeOfString:@"DO NOT FILE IN THIS CASE"];
     
-    for(GDataXMLElement *e in [docketTextsElement children])
+    if(r.location != NSNotFound)
     {
-        DkTDocketEntry *entry = [[DkTDocketEntry alloc] init];
-        
-        entry.summary = [PACERParser stripBracketedFromString:[e attributeForName:@"text"].stringValue];
-        entry.date = [e attributeForName:@"dateFiled"].stringValue;
-        NSString *link = [e attributeForName:@"docLink"].stringValue;
-        [entry.urls setObject:link forKey:PACERDOCURLKey];
-        entry.summary = [e attributeForName:@"text"].stringValue;
-        
-        //copy from docket
-        entry.casenum = [docket.case_num copy];
-        entry.docketName = [docket.name copy];
-        
-        [returnArray addObject:entry];
+        name = [docket.name substringToIndex:r.location];
     }
     
-    return [NSArray arrayWithArray:returnArray];
+    docket.name = name;
+}
+
++(NSArray *)parseAppellateDocket:(DkTDocket *)docket html:(NSData *)html
+{
+    @try {
+        TFHpple *hpple = [TFHpple hppleWithData:html isXML:NO];
+        TFHppleElement *dktEntry = [hpple peekAtSearchWithXPathQuery:@"//form[@name='dktEntry']"];
+        TFHppleElement *table = [[[[dktEntry firstChildWithTagName:@"table"] firstChildWithTagName:@"tr"] firstChildWithTagName:@"td"]firstChildWithTagName:@"table"] ;
+        
+        NSMutableArray *returnArray = [NSMutableArray array];
+        
+        NSArray *rows = [table childrenWithTagName:@"tr"];
+        for(TFHppleElement *row in rows)
+        {
+            @autoreleasepool {
+                
+                DkTDocketEntry *entry = [[DkTDocketEntry alloc] init];
+                
+                NSArray *cols = [row childrenWithTagName:@"td"];
+                
+                
+                entry.date = ((TFHppleElement *)[cols objectAtIndex:0]).text;
+                
+                TFHppleElement *col2 = [cols objectAtIndex:1];
+                
+                TFHppleElement *linkElement = [col2 firstChildWithTagName:@"a"];
+                
+                NSNumber *num =[NSNumber numberWithUnsignedInt:linkElement.text.integerValue];
+                
+                if(linkElement == nil)
+                {
+                    NSString *raw = col2.raw;
+                    raw = [raw substringFromIndex:[raw rangeOfString:@"/>"].location+2];
+                    raw = [raw substringToIndex:[raw rangeOfString:@"<"].location];
+                    raw = [raw stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+                    num = [NSNumber numberWithInteger:raw.integerValue];
+                }
+                
+                entry.entryNumber = num;
+                
+                NSString *link = [linkElement objectForKey:@"href"];
+                
+                if(link.length > 0) [entry.urls setObject:link forKey:PACERDOCURLKey];
+                
+                entry.summary = ((TFHppleElement *)[cols objectAtIndex:2]).raw;//[PACERParser stripBracketedFromString:[e attributeForName:@"text"].stringValue];
+                
+                entry.docket = docket;
+                [returnArray addObject:entry];
+                
+            }
+            
+            
+        }
+        
+        return [NSArray arrayWithArray:returnArray];
+    }
+    @catch (NSException *exception) {
+        return nil;
+    }
+    @finally {
+        
+    }
+    
     
 }
 
 +(NSArray *) parseDocket:(DkTDocket *)docket html:(NSData *)data
 {
-    
-    if(docket.type == DocketTypeBankruptcy) return [PACERParser parseBankruptcyDocket:docket html:data];
-    
-    TFHpple *hpple = [[TFHpple alloc] initWithHTMLData:data];
-    NSArray *tables = [hpple searchWithXPathQuery:@"//table"];
-    
-    TFHppleElement *table;
-    
-    for(TFHppleElement *t in tables)
-    {
-        if([[t objectForKey:@"rules"] isEqualToString:@"all"])
+    @try {
+        if(docket.type == DocketTypeBankruptcy) return [PACERParser parseBankruptcyDocket:docket html:data];
+        
+        TFHpple *hpple = [[TFHpple alloc] initWithHTMLData:data];
+        NSArray *tables = [hpple searchWithXPathQuery:@"//table"];
+        
+        TFHppleElement *table;
+        
+        for(TFHppleElement *t in tables)
         {
-            table = t;
-            break;
-        }
-    }
-    
-    NSArray *docket_rows = [table childrenWithTagName:@"tr"];
-    
-    NSMutableArray *returnArray = [NSMutableArray array];
-    
-    for(int i = 1; i < docket_rows.count; ++i)
-    {
-        TFHppleElement *current_docket_row = [docket_rows objectAtIndex:i];
-        NSArray *docket_cols = [current_docket_row childrenWithTagName:@"td"];
-        
-        //Create the docket entry
-        DkTDocketEntry *entry = [[DkTDocketEntry alloc] init];
-        
-        entry.court = [docket.court copy];
-        
-        int col_num = 0;
-        
-        //Column 1 = date
-        entry.date = ((TFHppleElement *)[docket_cols objectAtIndex:col_num]).text;
-        
-        col_num++; //bankruptcy has 4 columns
-        
-        //Column 2 = link
-        TFHppleElement *link_col = [docket_cols objectAtIndex:col_num];
-        
-        NSArray *links = [link_col childrenWithTagName:@"a"];
-        
-        if(links.count > 0)
-        {
-            
-            TFHppleElement *link_entry = [links objectAtIndex:0];
-            
-            NSString *link = [link_entry objectForKey:@"href"];
-            
-            if(link)
+            if([[t objectForKey:@"rules"] isEqualToString:@"all"])
             {
-                if([link hasPrefix:@"/"])
-                {
-                    link = [[entry courtLink] stringByAppendingPathComponent:link];
-                }
+                table = t;
+                break;
+            }
+        }
+        
+        NSArray *docket_rows = [table childrenWithTagName:@"tr"];
+        
+        NSMutableArray *returnArray = [NSMutableArray array];
+        
+        for(int i = 1; i < docket_rows.count; ++i)
+        {
+            
+            @autoreleasepool {
                 
-                if([link rangeOfString:@"doc1"].location != NSNotFound)
-                {
-                    [entry.urls setObject:[link copy] forKey:PACERDOCURLKey];
-                }
+                TFHppleElement *current_docket_row = [docket_rows objectAtIndex:i];
+                NSArray *docket_cols = [current_docket_row childrenWithTagName:@"td"];
                 
-                else if ([link rangeOfString:@"cgi"].location != NSNotFound)
+                //Create the docket entry
+                DkTDocketEntry *entry = [[DkTDocketEntry alloc] init];
+                
+                entry.docket = docket;
+                
+                int col_num = 0;
+                
+                //Column 1 = date
+                entry.date = ((TFHppleElement *)[docket_cols objectAtIndex:col_num]).text;
+                
+                col_num++; //bankruptcy has 4 columns
+                
+                //Column 2 = link
+                TFHppleElement *link_col = [docket_cols objectAtIndex:col_num];
+                
+                NSArray *links = [link_col childrenWithTagName:@"a"];
+                
+                if(links.count > 0)
                 {
                     
-                    [entry.urls setObject:[link copy] forKey:PACERCGIURLKey];
+                    TFHppleElement *link_entry = [links objectAtIndex:0];
+                    
+                    NSString *link = [link_entry objectForKey:@"href"];
+                    
+                    if(link)
+                    {
+                        if([link hasPrefix:@"/"])
+                        {
+                            link = [[entry courtLink] stringByAppendingPathComponent:link];
+                        }
+                        
+                        if([link rangeOfString:@"doc1"].location != NSNotFound)
+                        {
+                            [entry.urls setObject:[link copy] forKey:PACERDOCURLKey];
+                        }
+                        
+                        else if ([link rangeOfString:@"cgi"].location != NSNotFound)
+                        {
+                            
+                            [entry.urls setObject:[link copy] forKey:PACERCGIURLKey];
+                        }
+                        
+                        
+                    }
+                    
+                    
+                    if([[link_entry text] length] > 0) entry.entryNumber = [NSNumber numberWithUnsignedInt:[[link_entry text] integerValue]];
+                    
+                    entry.docLinkParam = [link_entry objectForKey:@"id"];
+                    
                 }
                 
                 
+                
+                ++col_num;
+                
+                //Column 3 = contents
+                TFHppleElement *contents_col = [docket_cols objectAtIndex:col_num];
+                entry.summary = contents_col.raw;
+                
+                //copy from docket
+                entry.docket = docket;
+                
+                
+                
+                //search for the word attachment
+                // NSRange attachment_range = [contents_col.content rangeOfString:@"Attachments:"];
+                
+                /*
+                 if(attachment_range.location != NSNotFound)
+                 {
+                 NSString *attachment_text = [contents_col.content substringFromIndex:attachment_range.location];
+                 entry.exhibits = [self parseAttachmentText:attachment_text];
+                 }
+                 */
+                [returnArray addObject:entry];
             }
-            
-            
-            
-            entry.entry = [[link_entry text] integerValue];
-            entry.docLinkParam = [link_entry objectForKey:@"id"];
             
         }
         
+        return [NSArray arrayWithArray:returnArray];
+    }
+    @catch (NSException *exception) {
+        return nil;
+    }
+    @finally {
         
-        
-        ++col_num;
-        
-        //Column 3 = contents
-        TFHppleElement *contents_col = [docket_cols objectAtIndex:col_num];
-        entry.summary = contents_col.raw;
-        
-        //copy from docket
-        entry.casenum = [docket.case_num copy];
-        entry.docketName = [docket.name copy];
-        
-        
-        
-        
-        //search for the word attachment
-        // NSRange attachment_range = [contents_col.content rangeOfString:@"Attachments:"];
-        
-        /*
-         if(attachment_range.location != NSNotFound)
-         {
-         NSString *attachment_text = [contents_col.content substringFromIndex:attachment_range.location];
-         entry.exhibits = [self parseAttachmentText:attachment_text];
-         }
-         */
-        [returnArray addObject:entry];
     }
     
-    return (NSArray *)returnArray;
 }
 
 +(NSArray *) parseBankruptcyDocket:(DkTDocket *)docket html:(NSData *)data
 {
-    NSLog(@"%@", [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
-    TFHpple *hpple = [[TFHpple alloc] initWithHTMLData:data];
-    NSArray *tables = [hpple searchWithXPathQuery:@"//table"];
-    TFHppleElement *table = [tables lastObject];
-    
-    NSArray *docket_rows = [table childrenWithTagName:@"tr"];
-    
-    NSMutableArray *returnArray = [NSMutableArray array];
-    
-    for(int i = 1; i < docket_rows.count; ++i)
-    {
-        TFHppleElement *current_docket_row = [docket_rows objectAtIndex:i];
-        NSArray *docket_cols = [current_docket_row childrenWithTagName:@"td"];
+    @try {
+        TFHpple *hpple = [[TFHpple alloc] initWithHTMLData:data];
+        NSArray *divs = [hpple searchWithXPathQuery:@"//div[@id='cmecfMainContent']"];
+        TFHppleElement *div = [divs lastObject];
+        NSArray *tables = [div childrenWithTagName:@"table"];
+        TFHppleElement *table = [tables lastObject];
+        TFHppleElement *tbody = [table firstChildWithTagName:@"tbody"];
+        NSArray *docket_rows = (tbody == nil) ? [table childrenWithTagName:@"tr"] : [tbody childrenWithTagName:@"tr"];
+        NSMutableArray *returnArray = [NSMutableArray array];
         
-        //Create the docket entry
-        DkTDocketEntry *entry = [[DkTDocketEntry alloc] init];
-        
-        entry.court = [docket.court copy];
-        
-        int col_num = 0;
-        
-        //Column 1 = date
-        entry.date = ((TFHppleElement *)[docket_cols objectAtIndex:col_num]).text;
-        
-        col_num = 2; //bankruptcy has 4 columns
-        
-        //Column 2 = link
-        TFHppleElement *link_col = [docket_cols objectAtIndex:col_num];
-        
-        NSArray *links = [link_col childrenWithTagName:@"a"];
-        
-        if(links.count > 0)
+        for(int i = 1; i < docket_rows.count; ++i)
         {
             
-            TFHppleElement *link_entry = [links objectAtIndex:0];
-            
-            NSString *link = [link_entry objectForKey:@"href"];
-            
-            if(link)
-            {
-                if([link hasPrefix:@"/"])
-                {
-                    link = [[entry courtLink] stringByAppendingPathComponent:link];
-                }
+            @autoreleasepool {
                 
-                if([link rangeOfString:@"doc1"].location != NSNotFound)
-                {
-                    [entry.urls setObject:[link copy] forKey:PACERDOCURLKey];
-                }
+                TFHppleElement *current_docket_row = [docket_rows objectAtIndex:i];
+                NSArray *docket_cols = [current_docket_row childrenWithTagName:@"td"];
                 
-                else if ([link rangeOfString:@"cgi"].location != NSNotFound)
+                //Create the docket entry
+                DkTDocketEntry *entry = [[DkTDocketEntry alloc] init];
+                
+                entry.docket = docket;
+                
+                int col_num = 0;
+                
+                //Column 1 = date
+                entry.date = ((TFHppleElement *)[docket_cols objectAtIndex:col_num]).text;
+                
+                col_num = 2; //bankruptcy has 4 columns
+                
+                //Column 2 = link
+                TFHppleElement *link_col = [docket_cols objectAtIndex:col_num];
+                
+                NSArray *links = [link_col childrenWithTagName:@"a"];
+                
+                if(links.count > 0)
                 {
                     
-                    [entry.urls setObject:[link copy] forKey:PACERCGIURLKey];
+                    TFHppleElement *link_entry = [links objectAtIndex:0];
+                    
+                    NSString *link = [link_entry objectForKey:@"href"];
+                    
+                    if(link)
+                    {
+                        if([link hasPrefix:@"/"])
+                        {
+                            link = [[entry courtLink] stringByAppendingPathComponent:link];
+                        }
+                        
+                        if([link rangeOfString:@"doc1"].location != NSNotFound)
+                        {
+                            [entry.urls setObject:[link copy] forKey:PACERDOCURLKey];
+                        }
+                        
+                        else if ([link rangeOfString:@"cgi"].location != NSNotFound)
+                        {
+                            
+                            [entry.urls setObject:[link copy] forKey:PACERCGIURLKey];
+                        }
+                        
+                        
+                    }
+                    
+                    entry.entryNumber = [NSNumber numberWithUnsignedInt:[[link_entry text] integerValue]];
+                    
                 }
                 
+                
+                
+                ++col_num;
+                
+                //Column 3 = contents
+                TFHppleElement *contents_col = [docket_cols objectAtIndex:col_num];
+                entry.summary = contents_col.raw;
+                
+                //copy from docket
+                entry.docket = docket;
+                
+                [returnArray addObject:entry];
                 
             }
             
-            entry.entry = [[link_entry text] integerValue];
-            
         }
         
-        
-        
-        ++col_num;
-        
-        //Column 3 = contents
-        TFHppleElement *contents_col = [docket_cols objectAtIndex:col_num];
-        entry.summary = contents_col.raw;
-        
-        //copy from docket
-        entry.casenum = [docket.case_num copy];
-        entry.docketName = [docket.name copy];
-        
-        [returnArray addObject:entry];
+        return returnArray;
     }
-
-    return returnArray;
+    @catch (NSException *exception) {
+        return nil;
+    }
+    @finally {
+        
+    }
+   
+    
 }
 
 +(NSString *)parseForNextPage:(NSData *)html
@@ -406,9 +687,9 @@
     NSRange range;
     NSString *returnString = [str copy];
     
-    while ((range = [str rangeOfString:@"<[^>]+>" options:NSRegularExpressionSearch]).location != NSNotFound)
+    while ((range = [returnString rangeOfString:@"<[^>]+>" options:NSRegularExpressionSearch]).location != NSNotFound)
     {
-        [returnString stringByReplacingCharactersInRange:range withString:@""];
+        returnString = [returnString stringByReplacingCharactersInRange:range withString:@""];
     };
     
     return returnString;
@@ -419,77 +700,13 @@
     NSRange range;
     NSString *returnString = [str copy];
     
-    while ((range = [str rangeOfString:@"[[^>]+]" options:NSRegularExpressionSearch]).location != NSNotFound)
+    //fix
+    while ((range = [returnString rangeOfString:@"\\[([^]]+)\\]" options:NSRegularExpressionSearch]).location != NSNotFound)
     {
-        [returnString stringByReplacingCharactersInRange:range withString:@""];
+        returnString = [returnString stringByReplacingCharactersInRange:range withString:@""];
     };
     
     return returnString;
-}
-
-+(NSArray *)parseDocumentPage:(NSData *)html
-{
-    NSMutableArray *returnArray = [NSMutableArray array];
-    TFHpple *hpple = [TFHpple hppleWithHTMLData:html];
-    TFHppleElement *costTable = [hpple peekAtSearchWithXPathQuery:@"//table"];
-    TFHppleElement *tbody = [costTable firstChild];
-    NSArray *rows = [tbody children];
-    
-    TFHppleElement *firstRow = [rows objectAtIndex:0];
-    
-    NSString *fullLink = [[[firstRow firstChild] firstChildWithTagName:@"a"] objectForKey:@"href"];
-    DkTDocketEntry *entry = [[DkTDocketEntry alloc] init];
-    entry.name = @"Document";
-    //entry.link = fullLink;
-    
-    for(int i = 1; i < rows.count; ++i)
-    {
-        TFHppleElement *row = [rows objectAtIndex:i];
-        NSArray *columns = [row children];
-        
-        TFHppleElement *firstColumn = [columns objectAtIndex:0];
-            
-        if([firstColumn firstChildWithTagName:@"a"])
-        {
-            DkTDocketEntry *newEntry = [[DkTDocketEntry alloc] init];
-           // newEntry.link = [[firstColumn firstChildWithTagName:@"a"] objectForKey:@"href"];
-            newEntry.name = [((TFHppleElement *)[columns objectAtIndex:1]) text] ;
-            [returnArray addObject:entry];
-        }
-        
-        if(i == rows.count - 1)
-        {
-            NSString *clickLink = [[firstColumn firstTextChild] objectForKey:@"onclick"];
-            NSArray *components = [clickLink componentsSeparatedByString:@"'"];
-            DkTDocketEntry *newEntry = [[DkTDocketEntry alloc] init];
-           // newEntry.link = [components objectAtIndex:components.count-2];
-            newEntry.name = @"All";
-            [returnArray addObject:entry];
-        }
-    }
-    
-    return returnArray;
-
-}
-
-+(float) parseHtmlStringForCost:(NSString *)htmlString
-{
-    NSRange range = [htmlString rangeOfString:@"($"];
-    
-    float cost = 0;
-    
-    if(range.location != NSNotFound)
-    {
-        NSRange endRange = [htmlString rangeOfString:@")" options:NSCaseInsensitiveSearch range:NSMakeRange(range.location, range.location-htmlString.length-1)];
-        
-        if(endRange.location != NSNotFound)
-        {
-            NSString *costString = [htmlString substringWithRange:NSMakeRange(range.location, endRange.location - range.location)];
-            cost = [costString floatValue];
-        }
-    }
-    
-    return cost;
 }
 
 +(NSString *) pdfURLForDownloadDocument:(NSData *)data
@@ -500,6 +717,68 @@
     if(pdf) return [pdf objectForKey:@"href"];
     
     else return nil;
+}
+
++(void) parseAppellateCaseSelectionPage:(NSData *)html withDocket:(DkTDocket *)docket completion:(void (^)(NSString *cs_caseid))completion
+{
+    TFHpple *hpple = [TFHpple hppleWithData:html isXML:NO];
+    NSLog(@"%@", [hpple description]);
+    
+    NSArray *tables = [hpple searchWithXPathQuery:@"//table"];
+    
+    TFHppleElement *table;
+    
+    for(TFHppleElement *t in tables)
+    {
+        if([[t objectForKey:@"border"] isEqualToString:@"1"])
+        {
+            table = t;
+            break;
+        }
+    }
+    
+    
+    if(table)
+    {
+        NSLog(@"%@", [table description]);
+        NSArray *rows = [table childrenWithTagName:@"tr"];
+        
+        for(int i = 1; i < rows.count; ++i)
+        {
+            TFHppleElement *row = [rows objectAtIndex:i];
+            
+            NSArray *tds = [row childrenWithTagName:@"td"];
+            
+            NSString *dateString;
+            
+            if(tds.count > 1)
+            {
+                dateString = [((TFHppleElement *)[tds objectAtIndex:1]) text];
+                dateString = [dateString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            }
+            
+            if([dateString isEqualToString:docket.date])
+            {
+                TFHppleElement *td1 = [row firstChildWithTagName:@"td"];
+                TFHppleElement *link = [[td1 childrenWithTagName:@"a"] lastObject];
+                NSString *linkText = [link objectForKey:@"href"];
+                NSArray *components = [linkText componentsSeparatedByString:@"&"];
+                
+                for(NSString *component in components)
+                {
+                    if([component rangeOfString:@"caseid"].location != NSNotFound)
+                    {
+                        [docket setCs_caseid:[[component componentsSeparatedByString:@"="] lastObject]];
+                        break;
+                    }
+                }
+            }
+        }
+
+    }
+    completion(docket.cs_caseid);
+    
+    
 }
 
 @end

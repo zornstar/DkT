@@ -9,9 +9,6 @@
 #import "HMSegmentedControl.h"
 #import <QuartzCore/QuartzCore.h>
 
-@interface HMSegmentedControl ()
-//mz modification
-@end
 
 @implementation HMSegmentedControl
 

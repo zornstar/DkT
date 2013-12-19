@@ -7,10 +7,12 @@
 //
 
 #import "DkTSettings.h"
+#import "PACERClient.h"
 
-NSString* const DkTSettingsEnabledKey = @"DkTSettingsEnabledKey";
-NSString* const DkTSettingsReceiptKey = @"DkTSettingsReceiptKey";
-NSString* const DkTSettingsQuickLoginKey = @"DkTSettingsLoginKey";
+NSString* const DkTSettingsRECAPEnabledKey = @"DkTSettingsRECAPEnabledKey";
+NSString* const DkTSettingsAutoLoginKey = @"DkTSettingsAutoLoginKey";
+NSString* const DkTSettingsAddTOCKey = @"DkTSettingsTOCKey";
+NSString* const DkTSettingsMostRecentKey = @"DkTSettingsMostRecentFirst";
 
 @implementation DkTSettings
 
@@ -32,6 +34,7 @@ NSString* const DkTSettingsQuickLoginKey = @"DkTSettingsLoginKey";
 -(void) setValue:(id)value forKey:(NSString *)key
 {
     [[NSUserDefaults standardUserDefaults] setValue:value forKey:key];
+    
 }
 
 -(void) setBoolValue:(BOOL)value forKey:(NSString *)key

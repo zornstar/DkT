@@ -1,7 +1,4 @@
 //
-//  ZSHelpController.h
-//  DkTp
-//
 //  Created by Matthew Zorn on 6/29/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
@@ -20,8 +17,8 @@ typedef enum {ZSTopLeft, ZSTopRight, ZSBottomLeft, ZSBottomRight, ZSCenter} ZSPo
 @property (nonatomic) CGPoint origin;
 
 @property (nonatomic, strong) NSArray *popupImages;
-@property (nonatomic, strong) UIView *targetView;
-
+@property (nonatomic, weak) UIView *targetView;
+@property (nonatomic, weak) UIView *callerView;
 @property (nonatomic) ZSPopoverArrowDirection arrowDirection;
 @property (nonatomic) ZSPosition position;
 
@@ -30,7 +27,6 @@ typedef enum {ZSTopLeft, ZSTopRight, ZSBottomLeft, ZSBottomRight, ZSCenter} ZSPo
 @property (nonatomic, strong) UIColor *textColor;
 
 @property (nonatomic, strong) UIImage *icon;
-
 @property (nonatomic) CGSize size;
 
 #pragma mark - class methods 
@@ -40,15 +36,15 @@ typedef enum {ZSTopLeft, ZSTopRight, ZSBottomLeft, ZSBottomRight, ZSCenter} ZSPo
 +(void) showAtPoint:(CGPoint)point withAttributedText:(NSAttributedString *)attributedText;
 
 +(void) hide;
-
-#pragma mark - instance methods 
--(void) setIcon:(UIImage *)image;
--(void) setFont:(NSString *)fontName withColor:(UIColor *)color;
 +(void) toggle;
 
 +(void) set;
 +(void) setForClass:(Class)myClass;
 +(BOOL)isVisible;
+#pragma mark - instance methods 
+-(void) setIcon:(UIImage *)image;
+-(void) setFont:(NSString *)fontName withColor:(UIColor *)color;
+-(CGRect) frameInTargetView;
 
 @end
 
@@ -60,5 +56,11 @@ typedef enum {ZSTopLeft, ZSTopRight, ZSBottomLeft, ZSBottomRight, ZSCenter} ZSPo
 @end
 
 @interface ZSHelpView : UIView
+
+@end
+
+@interface ZSArrow : UIView
+
++(ZSArrow *) arrowWithFrame:(CGRect)frame direction:(double)direction color:(UIColor *)color;
 
 @end

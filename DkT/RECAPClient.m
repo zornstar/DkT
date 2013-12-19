@@ -9,6 +9,7 @@
 #import "RECAPClient.h"
 #import "PACERClient.h"
 
+#import "DkTAlertView.h"
 #import "AFJSONRequestOperation.h"
 #import "AFHTTPRequestOperation.h"
 #import "AFDownloadRequestOperation.h"
@@ -16,6 +17,7 @@
 #import "DkTDocket.h"
 #import "MBProgressHUD.h"
 #import "DkTDocumentManager.h"
+#import "DkTSettings.h"
 
 NSString* const RECAPFileLinkKey = @"filename";
 
@@ -48,17 +50,6 @@ NSString* const RECAPFileLinkKey = @"filename";
     return self;
 }
 
--(void) getDocketEntry:(DkTDocketEntry *)entry sender:(id<PACERClientProtocol>)sender
-{
-    // metadata for a PDF file, should have the following properties:
-    //    filemeta.mimetype ('application/pdf')
-    //    filemeta.court ('cacd')
-    //    filemeta.name ('1234567890.pdf')
-    //    filemeta.url ('/doc1/1234567890')
-    
-    [RECAPClient pacerClient];
-}
-
 -(void) getDocument:(DkTDocketEntry *)entry sender:(UIViewController<PACERClientProtocol>*)sender
 {
     NSString *pdfPath = [entry.urls objectForKey:DkTURLKey];
@@ -66,12 +57,23 @@ NSString* const RECAPFileLinkKey = @"filename";
     
     if([[pdfPath pathExtension] isEqualToString:@"pdf"])
     {
-        //fix
         NSString *tempDir = NSTemporaryDirectory();
         
         NSString *tempFilePath = [tempDir stringByAppendingPathComponent:[entry fileName]];
         
         NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:pdfPath]];
+        
+        //if file exists at temp path, then just get it from temppath
+        if([[NSFileManager defaultManager] fileExistsAtPath:tempFilePath])
+        {
+            if([sender respondsToSelector:@selector(didDownloadDocketEntry:atPath:cost:)])
+            {
+                [sender didDownloadDocketEntry:entry atPath:tempFilePath cost:NO];
+                
+            }
+            
+            return;
+        }
         
         AFDownloadRequestOperation *downloadOperation = [[AFDownloadRequestOperation alloc] initWithRequest:request targetPath:tempFilePath shouldResume:NO];
         
@@ -82,8 +84,6 @@ NSString* const RECAPFileLinkKey = @"filename";
                 NSLog(@"%@", tempFilePath);
                 [sender didDownloadDocketEntry:entry atPath:tempFilePath cost:NO];
                 
-                [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
-                
             }
             
             
@@ -93,6 +93,15 @@ NSString* const RECAPFileLinkKey = @"filename";
          
         failure:^(AFHTTPRequestOperation *operation, NSError *error) {
             
+            DkTAlertView *alert = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error downloading document."];
+            
+            [alert addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                
+                [alertView dismissAnimated:YES];
+            }];
+            
+            [alert show];
+            
         }];
         
         [self enqueueHTTPRequestOperation:downloadOperation];
@@ -101,54 +110,32 @@ NSString* const RECAPFileLinkKey = @"filename";
     
     else
     {
+        DkTAlertView *alert = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error downloading document."];
         
+        [alert addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+           
+            [alertView dismissAnimated:YES];
+        }];
+        
+        [alert show];
     }
         
    
     
 }
 
--(void) isDocketEntryRECAPPED:(DkTDocketEntry *)entry sender:(UIViewController<RECAPClientProtocol>*)sender
-{
-    if( (entry.court == nil) || (entry.link == nil) ) return;
-    
-    NSDictionary *params = @{@"court":entry.court,
-                             @"urls":@[entry.link]};
-    
-    
-    if([sender respondsToSelector:@selector(queryForDocketEntry:json:)])
-    {
-        [self postPath:@"query/" parameters:params success:^(AFHTTPRequestOperation *operation, id responseObject) {
-            
-            NSDictionary *json = [[NSJSONSerialization JSONObjectWithData:responseObject options:0 error:0] objectAtIndex:0];
-            
-            //filename
-            //timestamp
-            
-            [sender queryForDocketEntry:entry json:json];
-        }
-         
-        failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-            
-            [sender queryForDocketEntry:entry json:nil];
-            
-        }];
-
-    }
-    
-        
-}
 
 -(void) isDocketEntryRECAPPED:(DkTDocketEntry *)entry completion:(DkTQueryBlock)blk
 {
-    if( (entry.court == nil) || (entry.link == nil) ) return;
+    if( (entry.docket.court == nil) || (entry.link == nil) ) return;
     
-    
+    if( ![[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue]) return;
     
     if(blk) {
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:kQueryURL]];
         
         [request setHTTPMethod:@"POST"];
+     
         NSString *body = @"json=";
         
         
@@ -160,11 +147,9 @@ NSString* const RECAPFileLinkKey = @"filename";
                                                            options:NSJSONWritingPrettyPrinted
                                                              error:&error];
         
-        NSLog(@"%@",error);
-        
         NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
         
-        //iOS json encoding escapes forward slashes
+        //json encoding escapes forward slashes
         jsonString = [jsonString stringByReplacingOccurrencesOfString:@"\\" withString:@""];
         
         body = [body stringByAppendingString:jsonString];
@@ -177,7 +162,6 @@ NSString* const RECAPFileLinkKey = @"filename";
         
         [queryOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
             
-            NSLog(@"%@",[responseObject description]);
             
             if(responseObject) blk(entry, (NSDictionary *)responseObject);
     
@@ -185,6 +169,7 @@ NSString* const RECAPFileLinkKey = @"filename";
             
             
         } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+            
             blk(entry, nil);
         }];
         
@@ -196,49 +181,76 @@ NSString* const RECAPFileLinkKey = @"filename";
 }
 
 
--(void) uploadDocket:(NSData *)data court:(NSString *)court caseNumber:(NSString *)casenum
+-(void) uploadDocket:(NSData *)data docket:(DkTDocket *)docket
 {
-    NSDictionary *params = @{@"court":court,
-                             @"casenum":casenum};
+    NSDictionary *params = @{@"mimetype":@"text/html; charset=UTF-8",
+                             @"court":[docket shortCourt],
+                             @"casenum":[docket cs_caseid]};
+    NSMutableURLRequest *request = [self multipartFormRequestWithMethod:@"POST" path:@"http://dev.recapextension.org/recap/upload/" parameters:params constructingBodyWithBlock:^(id<AFMultipartFormData> formData) {
+        
+        [formData appendPartWithFileData:data
+                                    name:@"data"
+                                fileName:@"DktRpt.html"
+                                mimeType:@"text/html; charset=UTF-8"];
+    }];
     
-    NSURLRequest *postRequest = [self  multipartFormRequestWithMethod:@"POST"
-                                                                    path:@"/upload"
-                                                                    parameters:params
-                                                     constructingBodyWithBlock:^(id formData) {
-                                                       
-                                                         [formData appendPartWithFileData:data
-                                                                                     name:@"latte[photo]"
-                                                                                 fileName:@"latte.png"
-                                                                                 mimeType:@"text/html;  charset=UTF-8"];
-                                                                 }];
-    AFHTTPRequestOperation *operation = [[AFJSONRequestOperation alloc] initWithRequest:postRequest];
+    [request setHTTPMethod:@"POST"];
+    
+    AFHTTPRequestOperation *operation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+    [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+        NSLog(@"success!");
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        NSLog(@"doh!");
+    }];
     [self enqueueHTTPRequestOperation:operation];
 }
 
--(void) uploadCasePDF:(NSData *)data court:(NSString *)court url:(NSString *)url
+-(void) uploadCasePDF:(NSData *)data docketEntry:(DkTDocketEntry *)entry
 {
-    NSDictionary *params = @{@"data":data,
-                             @"mimetype":@"application/pdf",
-                             @"court":court,
-                             @"url":url};
-    [self postPath:@"/upload" parameters:params success:^(AFHTTPRequestOperation *operation, id responseObject) {
-        
-    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-        
-    }];
+    NSString *docID = [entry docID];
     
+    if(docID != nil)
+    {
+        NSDictionary *params = @{@"mimetype":@"application/pdf",
+                                 @"court":[entry shortCourt],
+                                 @"url":[NSString stringWithFormat:@"/doc1/%@", docID]};
+        NSMutableURLRequest *request = [self multipartFormRequestWithMethod:@"POST" path:@"http://recapextension.org/recap/upload/" parameters:params constructingBodyWithBlock:^(id<AFMultipartFormData> formData) {
+            
+            [formData appendPartWithFileData:data
+                                        name:@"data"
+                                    fileName:[NSString stringWithFormat:@"%@.pdf", [entry docID]]
+                                    mimeType:@"application/pdf"];
+        }];
+        
+        [request setHTTPMethod:@"POST"];
+        
+        AFHTTPRequestOperation *operation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+        [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+            NSLog(@"success!");
+        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+            NSLog(@"doh!");
+        }];
+        [self enqueueHTTPRequestOperation:operation];
+    }
+   
 }
 
 -(void) uploadDocMeta:(DkTDocketEntry *)entry
 {
-    NSDictionary *params = @{@"docid":entry.docID, @"court":entry.court, @"add_case_info":@"true"};
+    NSString *docID = entry.docID;
     
+    if(docID)
+    {
+        NSDictionary *params = @{@"docid":docID, @"court":entry.docket.court, @"add_case_info":@"true"};
+        
+        
+        [self postPath:@"adddocmeta" parameters:params success:^(AFHTTPRequestOperation *operation, id responseObject) {
+            
+        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+            
+        }];
+    }
     
-    [self postPath:@"adddocmeta" parameters:params success:^(AFHTTPRequestOperation *operation, id responseObject) {
-        
-    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-        
-    }];
 
 }
 

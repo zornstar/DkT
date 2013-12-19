@@ -40,16 +40,16 @@
 
 -(void) setup
 {
-    self.controls = @[[self switchWithKey:DkTSettingsEnabledKey], [self switchWithKey:DkTSettingsReceiptKey], [self switchWithKey:DkTSettingsQuickLoginKey]];
-    self.names = @[@"Enable RECAP", @"Receipt Notifications", @"Auto-Login"];
-    self.descriptions = @[@"Upload to and prompt for downloads from RECAP when available", @"Display receipt prior to download", @"Automatically login as the last user"];
+    self.controls = @[[self switchWithKey:DkTSettingsAutoLoginKey], [self switchWithKey:DkTSettingsAddTOCKey], [self switchWithKey:DkTSettingsMostRecentKey]];
+    self.names = @[@"Auto Login on\nStart Up", @"Print Table of Contents in Bundle", @"Most Recent Docket Entries First"]; //, @"Auto-Login"];
+    self.descriptions = @[@"Automatically login as last user on startup", @"Add a Table of Contents and page numbers to docket bundles.", @"Display the most recent docket entries at the top of the docket list."]; //,@"Automatically login as the last user"];
     self.contentView = self.tableView;
 }
 
 
 -(MBSwitch *) switchWithKey:(NSString *)key
 {
-    MBSwitch *mySwitch = [[MBSwitch alloc] initWithFrame:CGRectMake(0, 0, 31, 50)];
+    MBSwitch *mySwitch = [[MBSwitch alloc] initWithFrame:CGRectMake(0, 0, 31, 35)];
     
     BOOL value = [[[DkTSettings sharedSettings] valueForKey:key] boolValue];
     
@@ -94,8 +94,10 @@
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
     }
     
+    cell.contentView.helpText = [self.descriptions objectAtIndex:indexPath.row];
     cell.accessoryView = [self.controls objectAtIndex:indexPath.row];
     cell.textLabel.text = [self.names objectAtIndex:indexPath.row];
+    cell.textLabel.adjustsFontSizeToFitWidth = YES;
     [cell.textLabel sizeToFit];
     
     
@@ -106,7 +108,7 @@
 {
     if(_tableView == nil)
     {
-        CGFloat x = CGRectGetMaxX(self.cell.frame), y = CGRectGetMaxY(self.cell.frame);
+        CGFloat x = CGRectGetMaxX(self.cell.frame)-2, y = CGRectGetMidY(self.cell.frame);
         
         CGRect frame = CGRectMake(x,y, self.containerView.frame.size.width - x, self.containerView.frame.size.height - y);
         _tableView = [[UITableView alloc] initWithFrame:frame style:UITableViewStylePlain];
@@ -114,6 +116,7 @@
         _tableView.delegate = self;
         _tableView.scrollEnabled = NO;
         _tableView.dataSource = self;
+        _tableView.rowHeight = 40.0f;
         _tableView.backgroundColor = [UIColor clearColor];
         _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
         

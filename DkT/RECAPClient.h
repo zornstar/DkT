@@ -9,12 +9,11 @@
 #import "AFHTTPClient.h"
 #import "PACERClient.h"
 
-#define kRECAPBaseURL @"http://dev.recapextension.org/DkT/"
+#define kRECAPBaseURL @"http://recapextension.org/"
 #define kRECAPUploadURL @"upload/"
-#define kQueryURL @"http://www.recapxtension.org/DkT/query/"
+#define kQueryURL @"http://recapextension.org/recap/query/"
 #define kQueryCasesURL @"query_cases/"
 #define kAddDocMetaURL @"adddocmeta/"
-#define kSearchURL
 
 extern NSString* const DkTFileLinkKey;
 
@@ -35,16 +34,13 @@ typedef void (^DkTQueryBlock)(id entry, id json);
 
 @interface RECAPClient : AFHTTPClient
 
-
 +(id) sharedClient;
 +(PACERClient *) pacerClient;
--(void) getDocket:(DkTDocket *)docket sender:(UIViewController<PACERClientProtocol>*)sender;
--(void) getDocument:(DkTDocketEntry *)entry sender:(UIViewController<PACERClientProtocol>*)sender;
--(void) uploadCasePDF:(NSData *)data court:(NSString *)court url:(NSString *)url;
--(void) uploadDocket:(NSData *)data court:(NSString *)court caseNumber:(NSString *)casenum;
--(void) isDocketEntryRECAPPED:(DkTDocketEntry *)entry sender:(UIViewController<RECAPClientProtocol>*)sender;
--(void) isDocketEntryRECAPPED:(DkTDocketEntry *)entry completion:(DkTQueryBlock)blk;
 
+-(void) getDocument:(DkTDocketEntry *)entry sender:(id<PACERClientProtocol>)sender;
+-(void) uploadCasePDF:(NSData *)data docketEntry:(DkTDocketEntry *)entry;
+-(void) isDocketEntryRECAPPED:(DkTDocketEntry *)entry completion:(DkTQueryBlock)blk;
+-(void) uploadDocket:(NSData *)data docket:(DkTDocket *)docket;
 -(void) uploadDocMeta:(DkTDocketEntry *)entry;
 
 @end

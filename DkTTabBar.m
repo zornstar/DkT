@@ -1,7 +1,4 @@
 //
-//  RECAPTabBar.m
-//  RECAPp
-//
 //  Created by Matthew Zorn on 5/21/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
@@ -62,7 +59,7 @@
             frame = CGRectMake(0, stringHeight/2.-roundf(.1*self.segmentWidth)/2., roundf(.1*self.segmentWidth), roundf(.1*self.segmentWidth));
             UIImage *image = [self.sectionImages objectAtIndex:idx];
             
-            image = [image imageWithColor:(self.selectedSegmentIndex == idx) ? kLightTextColor : kDarkTextColor];
+            image = [image imageWithColor:(self.selectedSegmentIndex == idx) ? [UIColor lighterTextColor] : [UIColor darkerTextColor]];
             
             
             CALayer *imageLayer = [CALayer layer];

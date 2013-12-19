@@ -1,14 +1,10 @@
 //
 //  FSPopoverTableViewController.m
-//  DkTp
-//
-//  Created by Matthew Zorn on 6/1/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
 
 #import <QuartzCore/QuartzCore.h>
 #import "FSPopoverTableViewController.h"
-#import "FSPopoverTableArrow.h"
 
 @interface FSPopoverTableViewController ()
 {
@@ -16,6 +12,9 @@
     UIView *_containerView;
     FSPopoverTableArrow *_arrow;
 }
+
+@property (nonatomic, strong) UITableView *tableView;
+
 @end
 
 @implementation FSPopoverTableViewController
@@ -24,7 +23,7 @@
 {
     self = [super init];
     if (self) {
-        self.anchorView = view;
+        _anchorView = view;
         self.center = view.center;
         self.frame = rect;
         self.alignment = NSTextAlignmentCenter;
@@ -39,19 +38,20 @@
     
     CGRect frame = self.frame;
     frame.origin = CGPointMake(self.frame.origin.x, self.frame.origin.y-self.arrowLength);
-    frame.size.height = self.frame.size.height + self.arrowLength;
-    
+    frame.size.height =  MIN(self.frame.size.height, self.data.count * self.tableView.rowHeight) + self.arrowLength;
     _containerView = [[UIView alloc] initWithFrame:frame];
     
-    self.tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, self.arrowLength, self.frame.size.width, self.frame.size.height) style:UITableViewStylePlain];
+    self.tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, self.arrowLength, self.frame.size.width, frame.size.height - self.arrowLength) style:UITableViewStylePlain];
     self.tableView.dataSource = self;
     self.tableView.delegate = self;
     self.tableView.separatorColor = self.separatorColor;
-    self.tableView.rowHeight = 44.0;
+    self.tableView.rowHeight = 45.0;
     self.tableView.layer.cornerRadius = 5.0;
     self.tableView.layer.borderWidth = 2.0;
     self.tableView.layer.borderColor = self.borderColor.CGColor;
     self.tableView.bounces = NO;
+    self.tableView.showsVerticalScrollIndicator = NO;
+    
     _arrow = [[FSPopoverTableArrow alloc] initWithFrame:CGRectMake(self.frame.size.width/2.-self.arrowLength/2., self.tableView.layer.borderWidth, self.arrowLength, self.arrowLength)];
     _arrow.arrowColor = [self.colors objectAtIndex:1];
     _arrow.arrowLength = self.arrowLength;
@@ -59,7 +59,6 @@
     _arrow.layer.borderColor = self.borderColor.CGColor;
     
 	
-    
     
     _shadowView = [[UIView alloc] initWithFrame:self.tableView.frame];
     _shadowView.layer.shadowColor = [[UIColor blackColor] CGColor];
@@ -85,6 +84,12 @@
 {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+
+-(void) reloadData
+{
+    [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:NO];
+    [self.tableView reloadData];
 }
 
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -119,7 +124,7 @@
     }
     
     cell.textLabel.text = [self.data objectAtIndex:indexPath.row];
-    
+
     
     cell.contentView.backgroundColor = ( (indexPath.row % 2) && (self.colors.count > 2) ) ? [self.colors objectAtIndex:2] : [self.colors objectAtIndex:1];
     
@@ -141,13 +146,14 @@
 -(void) present
 {
     [self.anchorView addSubview:self.view];
+    [self.view bringSubviewToFront:_arrow];
     
-    CGFloat height = MIN(self.frame.size.height, self.data.count * self.tableView.rowHeight);
+    CGFloat height = MIN(self.frame.size.height, self.data.count * self.tableView.rowHeight) + self.arrowLength;
     CGRect start = _containerView.frame;
     start.size.height = 0;
     _containerView.frame = start;
     CGRect frame = _containerView.frame;
-    frame.size.height += height;
+    frame.size.height += height + 25;
     
     CGRect tableViewStart = _tableView.frame;
     tableViewStart.size.height = 0;
@@ -165,8 +171,10 @@
                      }
                      completion:^(BOOL finished){
                          
+                         
                        
                      }];
+     
 }
 
 -(void) hide
@@ -188,4 +196,66 @@
         [super touchesBegan:touches withEvent:event];
     }
 }
+
 @end
+
+@implementation FSPopoverTableArrow
+
+- (id)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:CGRectMake(frame.origin.x, frame.origin.y, frame.size.width, frame.size.height+1)];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+        self.layer.borderColor = [UIColor clearColor].CGColor;
+        self.direction = FSPopoverTableArrowDirectionUp;
+    }
+    return self;
+}
+
+- (void)drawRect:(CGRect)rect
+{
+    
+    [super drawRect:rect];
+    
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    
+    
+    CGPoint points[3] = { CGPointMake(0, rect.size.height-1), CGPointMake(rect.size.width/2., 0), CGPointMake(rect.size.width, rect.size.height-1) };
+    
+    /*
+    CGContextBeginPath(ctx);
+    CGContextMoveToPoint(ctx, points[2].x, points[2].y);
+    CGContextAddLineToPoint(ctx, points[0].x, points[0].y);
+    CGContextSetLineWidth(ctx, self.layer.borderWidth+1);
+    CGContextSetStrokeColorWithColor(ctx, self.arrowColor.CGColor);
+    CGContextSetFillColorWithColor(ctx, [UIColor clearColor].CGColor);
+    CGContextStrokePath(ctx);*/
+    
+    CGContextBeginPath(ctx);
+    CGContextMoveToPoint(ctx, points[0].x, points[0].y);
+    CGContextAddLineToPoint(ctx, points[1].x, points[1].y);
+    CGContextAddLineToPoint(ctx, points[2].x, points[2].y);
+    CGContextAddLineToPoint(ctx, points[0].x, points[0].y);
+    CGContextSetFillColorWithColor(ctx, self.arrowColor.CGColor);
+    CGContextFillPath(ctx);
+    
+    CGContextBeginPath(ctx);
+    CGContextMoveToPoint(ctx, points[0].x, points[0].y);
+    CGContextAddLineToPoint(ctx, points[1].x, points[1].y);
+    CGContextAddLineToPoint(ctx, points[2].x, points[2].y);
+    CGContextSetLineWidth(ctx, self.layer.borderWidth);
+    CGContextSetStrokeColorWithColor(ctx, self.layer.borderColor);
+    CGContextSetFillColorWithColor(ctx, [UIColor clearColor].CGColor);
+    CGContextStrokePath(ctx);
+    
+    
+    
+    self.layer.borderWidth = 0.0;
+    self.transform = CGAffineTransformMakeRotation(self.direction * M_PI_2);
+    
+    
+}
+
+
+@end
+

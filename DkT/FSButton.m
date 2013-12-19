@@ -1,8 +1,5 @@
 //
 //  FSButton.m
-//  DkTp
-//
-//  Created by Matthew Zorn on 6/1/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
 
@@ -11,9 +8,7 @@
 #import <QuartzCore/QuartzCore.h>
 
 @interface FSButton ()
-{
-    FSButtonSelectionBlock _selectionBlock;
-}
+
 @end
 
 @implementation FSButton
@@ -72,12 +67,12 @@
 -(void) setCornerRadius:(CGFloat)cornerRadius
 {
     self.layer.cornerRadius = cornerRadius;
-    self.cornerRadius = cornerRadius;
+    _cornerRadius = cornerRadius;
 }
 
 -(void) setIconSpacing:(CGFloat)iconSpacing
 {
-    self.iconSpacing = iconSpacing;
+    _iconSpacing = iconSpacing;
     self.imageEdgeInsets = UIEdgeInsetsMake(10, 10, 10, iconSpacing);
     self.titleEdgeInsets = UIEdgeInsetsMake(0, iconSpacing, 0, 0);
     
@@ -90,12 +85,6 @@
     
     self.imageView.transform = CGAffineTransformMakeScale(imageSize * scale, imageSize * scale);
 }
-
--(void) setSelectionBlock:(FSButtonSelectionBlock)blk
-{
-    _selectionBlock = blk;
-}
-
 
 -(void) invert
 {

@@ -7,13 +7,13 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "JRSwizzle.h"
 
 @class DkTRootViewController;
 
 @interface DkTAppDelegate : UIResponder <UIApplicationDelegate>
 
 @property (strong, nonatomic) UIWindow *window;
-
 @property (strong, nonatomic) DkTRootViewController *viewController;
 
 @end

@@ -14,11 +14,11 @@
 @property (nonatomic, strong) DkTSettingsCell *cell;
 @property (nonatomic) DkTSettingsIconPosition position;
 @property (nonatomic) CGRect frame;
-@property (nonatomic, strong) UIView *containerView;
+@property (nonatomic, strong) UIScrollView *containerView;
 @property (nonatomic, strong) UIView *contentView;
+@property (nonatomic, strong) UIControl *button;
 
 - (id)initWithSettingsCell:(DkTSettingsCell *)cell;
--(void) addContentView;
 
 @end
 

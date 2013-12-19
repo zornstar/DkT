@@ -1,6 +1,6 @@
 //
 //  DkTConstants.h
-//  DkTp
+//  DkT
 //
 //  Created by Matthew Zorn on 5/21/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -21,14 +21,18 @@
 #define kInactiveColor [UIColor colorWithRed:235./255 green:235./255 blue:235./255 alpha:1]
 #define kInactiveColorDark [UIColor colorWithRed:200./255 green:211./255 blue:211./255 alpha:1]
 
+#define APP_NAME [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIdentifier"]
+
 #define kDateTextColor [UIColor redColor]
 
 #define kMainFont @"STHeitiSC-Medium"
 #define kLightFont @"STHeitiSC-Light"
 #define kContrastFont @"Cutive-Regular"
-#define kStatusFont @"Montserrat-Regular"
-#define kHelpFont [UIFont systemFontOfSize:10]
-#define kBoldHelpFont [UIFont boldSystemFontOfSize:10]
+#define kSecondaryFont @"Montserrat-Regular"
+#define kSecondaryBoldFont @"Montserrat-Bold"
+
+#define kHelpFont [UIFont fontWithName:kSecondaryFont size:10]
+#define kBoldHelpFont [UIFont fontWithName:kSecondaryBoldFont size:10]
 
 
 #define kTabBarImage [UIImage imageNamed:@"tabBarImage"]
@@ -36,13 +40,13 @@
 #define kBookmarkPath 
 #define kBodyColor
 
-#define kSearchImage [UIImage imageNamed:@"search"]
+#define kSearchImage [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"search" ofType:@"png"]]
 #define kBookmarkImage [UIImage imageNamed:@"bookmark"]
-#define kDocumentsImage [UIImage imageNamed:@"documents"]
+#define kDocumentsImage [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"documents" ofType:@"png"]]
 #define kDocketImage [UIImage imageNamed:@"docket"]
 #define kSearchSmallImage [UIImage imageNamed:@"searchSmall"]
-#define kTabImage [UIImage imageNamed:@"home"]
-#define kSettingsImage [UIImage imageNamed:@"settings"]
+#define kTabImage [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"home" ofType:@"png"]]
+#define kSettingsImage [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"settings" ofType:@"png"]]
 #define kQuestionsImage [UIImage imageNamed:@"question"]
 #define kInfoImage [UIImage imageNamed:@"card"]
 #define kShareIcon [UIImage imageNamed:@"share"]
@@ -55,6 +59,13 @@
 #define kSubscribeImage [UIImage imageNamed:@"subscribe"]
 #define kSearchButtonImage [UIImage imageNamed:@"searchButtonImage"]
 #define kUpdateImage [UIImage imageNamed:@"update"]
+#define kDeleteImage [UIImage imageNamed:@"delete"]
+#define kUserImage [UIImage imageNamed:@"user"]
+#define kRoundedRect [UIImage imageNamed:@"roundedrect"]
+
+#define kCloudUpImage [UIImage imageNamed:@"cloudup"]
+#define kCloudDownImage [UIImage imageNamed:@"clouddown"]
+#define kCloudImage [UIImage imageNamed:@"cloud"]
 
 #define kAppStoreURL @"http://itunes.apple.com/"
 
@@ -67,8 +78,6 @@
 #define kPartyKey @"party"
 #define kCourtTypeKey @"court_type"
 
-#define kStatusBarHeight 20.0
-
 #define kToolbarIconSize CGSizeMake(30,30)
 
 #define kBaseFolder @"Federal Dockets"
@@ -79,3 +88,10 @@ typedef enum {PACERCourtTypeNone, PACERCourtTypeAppellate, PACERCourtTypeBankrup
 typedef enum {PACERRegionTypeNone, PACERRegionTypeAppellate, PACERRegionTypeBankruptcy, PACERRegionTypeState, PACERRegionTypeDistrict, PACERCourtTypeState} PACERRegionType;
 
 #endif
+
+#define DKT_DEBUG 1
+#define DEVICE_HEIGHT() [[UIScreen mainScreen] bounds].size.width
+#define IOS7(a, b) if([[[[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."] objectAtIndex:0] intValue] == 7) {a} else {b}
+#define PAD_OR_POD(a, b) (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? a : b
+#define IS_RETINA ([[UIScreen mainScreen] respondsToSelector:@selector(displayLinkWithTarget:selector:)] && ([UIScreen mainScreen].scale == 2.0))
+#define IS_IPHONE5  ([[UIScreen mainScreen] bounds].size.height == 568)

@@ -7,20 +7,34 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "PACERClient.h"
+#import "DkTDownload.h"
+#import "DkTDocumentsViewController.h"
 
-@class AFHTTPClient, DkTDocketEntry, DkTDocket;
+@class RECAPClient, DkTDocketEntry, DkTDocket, DkTDownloadManager;
 
 @protocol DkTDownloadManagerProtocol <NSObject>
 
--(void) didFinishDownload:(DkTDocket *)docket;
--(void) didFinishOperationNumber:(NSInteger)opNum total:(NSInteger)total;
+@optional
+-(void) downloadManager:(DkTDownloadManager *)manager didFinishDownload:(DkTDownload *)entry;
+-(void) downloadManager:(DkTDownloadManager *)manager didHandleError:(DkTDownload *)entry;
+-(void) downloadManager:(DkTDownloadManager *)manager didHandleSealedDocument:(DkTDownload *)entry;
+-(void) downloadManager:(DkTDownloadManager *)manager didHandleEntries:(NSArray *)entries entry:(DkTDownload *)entry;
 
 @end
 
-@interface DkTDownloadManager : NSObject
+@interface DkTDownloadManager : NSObject <PACERClientProtocol>
 
 +(id) sharedManager;
+//+(RECAPClient *)recapClient;
++(PACERClient *)pacerClient;
 +(void) batchDownload:(DkTDocket *)docket entries:(NSArray *)docketEntries sender:(UIViewController<DkTDownloadManagerProtocol>*)sender;
++(void) batchDownload:(DkTDownload *)download docket:(DkTDocket *)docket sender:(UIViewController<DkTDownloadManagerProtocol>*)sender;
 +(void) terminate;
+
+@property (nonatomic, strong) PACERClient *pacerClient;
+//@property (nonatomic, strong) RECAPClient *recapClient;
+@property (weak) id<DkTDownloadManagerProtocol>delegate;
+@property (nonatomic, strong) DkTDownload *batchDownload;
 
 @end

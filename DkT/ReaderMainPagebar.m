@@ -147,10 +147,19 @@
 		self.backgroundColor = [UIColor clearColor];
 
 		CAGradientLayer *layer = (CAGradientLayer *)self.layer;
+        
+        /**** DkT Modification
 		UIColor *liteColor = [UIColor colorWithWhite:0.82f alpha:0.8f];
 		UIColor *darkColor = [UIColor colorWithWhite:0.32f alpha:0.8f];
+         
+         ****/
+        
+        UIColor *liteColor = [[UIColor activeColor] colorWithAlphaComponent:.5f];//new
+		UIColor *darkColor = [[UIColor activeColor] colorWithAlphaComponent:.5f];//new
+        
 		layer.colors = [NSArray arrayWithObjects:(id)liteColor.CGColor, (id)darkColor.CGColor, nil];
-
+        
+        
 		CGRect shadowRect = self.bounds; shadowRect.size.height = 4.0f; shadowRect.origin.y -= shadowRect.size.height;
 
 		ReaderPagebarShadow *shadowView = [[ReaderPagebarShadow alloc] initWithFrame:shadowRect];
@@ -186,7 +195,7 @@
 		pageNumberLabel.shadowOffset = CGSizeMake(0.0f, 1.0f);
 		pageNumberLabel.shadowColor = [UIColor blackColor];
 		pageNumberLabel.adjustsFontSizeToFitWidth = YES;
-		pageNumberLabel.minimumFontSize = 12.0f;
+		pageNumberLabel.minimumScaleFactor = 12.0f/16.0f;
 
 		[pageNumberView addSubview:pageNumberLabel]; // Add label view
 

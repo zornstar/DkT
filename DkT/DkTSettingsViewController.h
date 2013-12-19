@@ -7,8 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
-#import <StoreKit/StoreKit.h>
-@interface DkTSettingsViewController : UIViewController <UICollectionViewDataSource, UICollectionViewDelegate, SKStoreProductViewControllerDelegate>
+@interface DkTSettingsViewController : UIViewController <UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout>
 
 
 @end

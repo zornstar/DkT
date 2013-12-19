@@ -1,7 +1,4 @@
 //
-//  RECAPSession.h
-//  RECAPp
-//
 //  Created by Matthew Zorn on 5/26/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
@@ -15,6 +12,8 @@
 @optional
 
 -(void) didChangeUser:(DkTUser *)user;
+-(void) didLoginUser:(DkTUser *)user;
+-(void) cookieDidExpireWithReveal:(BOOL)reveal;
 
 @end
 
@@ -27,15 +26,14 @@
 
 @property (nonatomic) float cost;
 
-@property (unsafe_unretained) id<DkTSessionDelegate> delegate;
+@property (nonatomic, weak) id<DkTSessionDelegate> delegate;
 
 + (id)sharedInstance;
 +(DkTSession *) currentSession;
-
 +(void) setCurrentSession:(DkTSession *)session;
-+ (void) setUser:(DkTUser *)user;
 + (void) addCost:(float)money;
 + (void) addCostForPages:(NSUInteger)pages;
++(void) nullifyCurrentSession;
 
 @end
 

@@ -1502,9 +1502,15 @@ NS_INLINE void safelyExecuteCompletionBlockOnMainThread(PKDefaultCompletionHandl
 
 @implementation PKRevealController (DkT)
 
-
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
 {
+    
+    [gestureRecognizer requireGestureRecognizerToFail:otherGestureRecognizer];
     return YES;
+}
+
+-(void) requireGestureToFailBeforeReveal:(UIGestureRecognizer *)gesture
+{
+    [self.revealPanGestureRecognizer requireGestureRecognizerToFail:gesture];
 }
 @end

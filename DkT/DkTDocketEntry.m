@@ -12,10 +12,14 @@
 
 #import <objc/runtime.h>
 
-NSString* const DkTURLKey = @"archive";
-NSString* const LocalURLKey = @"local";
-NSString* const PACERDOCURLKey = @"pacerdoc";
-NSString *const PACERCGIURLKey = @"pacercgi";
+
+NSString * const DkTURLKey = @"archive";
+NSString * const LocalURLKey = @"local";
+NSString * const PACERDOCURLKey = @"pacerdoc";
+NSString * const PACERCGIURLKey = @"pacercgi";
+NSString * const kWriteableProperties[] = {
+    @"urls",@"entryNumber", @"lookupStatus", @"docID", @"docLinkParam",@"date",@"summary"
+};
 
 @implementation DkTDocketEntry
 
@@ -24,7 +28,8 @@ NSString *const PACERCGIURLKey = @"pacercgi";
     if(self = [super init])
     {
         _urls = [NSMutableDictionary dictionaryWithCapacity:4];
-        _lookupFlag = FALSE;
+        _lookupStatus = DktEntryStatusNone;
+        self.entryNumber = @0;
     }
     
     return self;
@@ -72,28 +77,35 @@ NSString *const PACERCGIURLKey = @"pacercgi";
 {
     NSMutableAttributedString *returnStr = [[NSMutableAttributedString alloc] initWithString:@""];
     
-    NSScanner *scanner = [NSScanner scannerWithString:self.summary];
+    NSString *string = [self.summary stringByReplacingOccurrencesOfString:@"&amp;" withString:@"&"];
+    string = [string stringByReplacingOccurrencesOfString:@"&quot;" withString:@"\""];
+    string = [string stringByReplacingOccurrencesOfString:@"&apos;" withString:@"'"];
+    
+    NSScanner *scanner = [NSScanner scannerWithString:string];
     scanner.charactersToBeSkipped = NULL;
     NSString *tempText = nil;
     NSString *tagText = nil;
     
-    [scanner scanUpToString:@">" intoString:nil];
-    [scanner setScanLocation:[scanner scanLocation] + 1];
+    if([self.summary characterAtIndex:0] == '<')
+    {
+        [scanner scanUpToString:@">" intoString:nil];
+        [scanner setScanLocation:[scanner scanLocation] + 1];
+    }
     
     while (![scanner isAtEnd])
     {
         [scanner scanUpToString:@"<" intoString:&tempText];
         
         
-        
         if (tempText != nil)
         {
             
-            NSAttributedString *tempAttrText = [[NSAttributedString alloc] initWithString:tempText attributes:@{NSForegroundColorAttributeName:kDarkTextColor}];
+            NSAttributedString *tempAttrText = [[NSAttributedString alloc] initWithString:tempText attributes:@{NSForegroundColorAttributeName:[UIColor darkerTextColor]}];
             [returnStr appendAttributedString:tempAttrText];
             
-            if (![scanner isAtEnd])
-                [scanner setScanLocation:[scanner scanLocation] + 1];
+            if ([scanner isAtEnd]) break;
+            
+            [scanner setScanLocation:[scanner scanLocation] + 1];
             
             if([self.summary characterAtIndex:[scanner scanLocation]] == 'a')
             {
@@ -102,32 +114,44 @@ NSString *const PACERCGIURLKey = @"pacercgi";
                 [scanner setScanLocation:[scanner scanLocation] + 1];
                 [scanner scanUpToString:@"</a>" intoString:&tagText];
                 
-                NSAttributedString *tempAttrTag = [[NSAttributedString alloc] initWithString:tagText attributes:@{NSForegroundColorAttributeName:kInactiveColor,
-                                    NSBackgroundColorAttributeName:kActiveColor}];
+                NSAttributedString *tempAttrTag = [[NSAttributedString alloc] initWithString:tagText attributes:@{NSForegroundColorAttributeName:[UIColor activeColor]}];
                 
                 [returnStr appendAttributedString:tempAttrTag];
                 
                 [scanner setScanLocation:[scanner scanLocation] + 3];
             }
-            
+
             else
             {
                 [scanner scanUpToString:@">" intoString:nil];
                 
             }
             
-            if (![scanner isAtEnd])
-                [scanner setScanLocation:[scanner scanLocation] + 1];
             
+            [scanner setScanLocation:[scanner scanLocation] + 1];
             
+        }
+        
+        else
+        {
+            [scanner scanUpToString:@">" intoString:nil];
+            [scanner setScanLocation:[scanner scanLocation] + 1];
         }
         
     }
     
-    return [[NSAttributedString alloc] initWithAttributedString:returnStr];
+    if(self.pages.length > 0)
+    {
+        NSString *append = [NSString stringWithFormat:@" (%@)", self.pages];
+        [returnStr appendAttributedString:[[NSAttributedString alloc] initWithString:append]];
+    }
+    
+    NSAttributedString *returnString = [[NSAttributedString alloc] initWithAttributedString:returnStr];
+    return returnString;
     
 }
 
+/*
 - (NSArray *) properties
 {
     unsigned count;
@@ -146,25 +170,25 @@ NSString *const PACERCGIURLKey = @"pacercgi";
     free(properties);
     
     return rv;
-}
+}*/
 
 -(NSString *)fileName
 {
-    NSString *caseid = [self valueForParamKey:@"caseid"];
-    NSString *filename = [NSString stringWithFormat:@"%@ - %d.pdf", caseid, self.entry];
+    NSString *filename = [NSString stringWithFormat:@"Entry #%d.pdf", self.entryNumber.intValue];
     return filename;
 }
 
 -(NSString *)shortCourt
 {
-    NSString *court = self.court;
+    NSString *court = self.docket.court;
     court = [court substringToIndex:court.length-2];
     return court;
 }
 
 -(NSString *)linkPath
 {
-    return [self.link substringFromIndex:[self courtLink].length];
+    NSString *linkPath = [self.link substringFromIndex:[self courtLink].length];
+    return linkPath;
 }
 
 -(NSString *)link
@@ -184,4 +208,26 @@ NSString *const PACERCGIURLKey = @"pacercgi";
     else return nil;
 }
 
+-(NSString *)entryString
+{
+    return [NSString stringWithFormat:@"%d",self.entryNumber.intValue];
+}
+
+-(NSString *)docID
+{
+    return [[[self.urls objectForKey:PACERDOCURLKey] componentsSeparatedByString:@"/"] lastObject];
+}
+@end
+
+@implementation DKTAttachment
+
+-(NSString *)entryString
+{
+    return [NSString stringWithFormat:@"%d.%d",self.entryNumber.intValue, self.attachment.intValue];
+}
+
+-(NSString *)fileName
+{
+    return [NSString stringWithFormat:@"Entry #%d-%d.pdf", self.entryNumber.intValue, self.attachment.intValue];
+}
 @end

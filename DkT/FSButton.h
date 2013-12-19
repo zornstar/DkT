@@ -1,8 +1,4 @@
-//
 //  FSButton.h
-//  DkTp
-//
-//  Created by Matthew Zorn on 6/1/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
 
@@ -21,5 +17,6 @@ typedef void (^FSButtonSelectionBlock)();
 @property (nonatomic, readonly, getter = isHighlighted) BOOL highlighted;
 @property (nonatomic) CGFloat iconSpacing;
 @property (nonatomic) CGFloat imageSize;
+@property (copy) FSButtonSelectionBlock selectionBlock;
 
 @end
