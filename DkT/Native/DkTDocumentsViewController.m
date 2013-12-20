@@ -22,7 +22,6 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
 
 @interface DkTDocumentsViewController ()
 
-@property (nonatomic, strong) NSMutableSet *operations;
 @property (nonatomic, strong) NSIndexPath *batchPath;
 @property (nonatomic, strong) NSIndexPath *zipPath;
 @property (nonatomic, strong) NSMutableArray *dockets;
@@ -41,7 +40,6 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
     if (self) {
         
         self.dockets = [[DkTDocumentManager sharedManager] dockets];
-        self.operations = [NSMutableSet set];
         [DkTDocumentManager setDelegate:self];
         _batchPath = nil; _zipPath = nil;
         
@@ -136,7 +134,7 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
         else
         {
             NSMutableDictionary *sectionDictionary = [self.dockets objectAtIndex:indexPath.section];
-            DkTFile *file = [[sectionDictionary objectForKey:DkTFileDocketFilesKey] objectAtIndex:indexPath.row];
+            DkTFile *file = [[sectionDictionary objectForKey:DkTFileDocketFilesKey] objectAtIndex:indexPath.row-1];
             NSURL *url = [NSURL fileURLWithPath:[file objectForKey:DkTFilePathKey]];
             _doccontroller = [UIDocumentInteractionController interactionControllerWithURL:url];
             _doccontroller.delegate = self;
@@ -169,8 +167,6 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
     }
     
     self.zipPath = indexPath;
-   
-    [self.operations addObject:indexPath];
         
     DkTDocketFile *docketDict = [self.dockets objectAtIndex:indexPath.section];
     NSString *docketPath = [[DkTDocumentManager docketsFolder] stringByAppendingPathComponent:[docketDict objectForKey:DkTFileDocketNameKey]];
@@ -189,7 +185,6 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
         dispatch_async(dispatch_get_main_queue(), ^{
             
             self.zipPath = nil;
-            [self.operations removeObject:indexPath];
             [(UIActivityIndicatorView *)cell.accessoryView stopAnimating];
             cell.accessoryView = nil;
             
@@ -233,9 +228,8 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
 
 -(void) batchDocuments:(NSIndexPath *)indexPath
 {
-    DkTDocketFile *docketDict = [self.dockets objectAtIndex:indexPath.row];
+    DkTDocketFile *docketDict = [self.dockets objectAtIndex:indexPath.section];
     DkTButtonCell *cell = (DkTButtonCell *)[self.tableView cellForRowAtIndexPath:indexPath];
-    
     if(self.batchPath != nil)
     {
         DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Busy" andMessage:@"Currently bundling another docket."];

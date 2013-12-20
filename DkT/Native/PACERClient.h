@@ -16,7 +16,7 @@ typedef NS_OPTIONS(NSUInteger, PACERConnectivityStatus) {
     PACERConnectivityStatusNotLoggedIn = (1 << 2)
 };
 
-@class DkTDocketEntry, RECAPClient, DkTSearchViewController, DkTSession, DKTAttachment;
+@class DkTDocketEntry, /*RECAPClient,*/ DkTSearchViewController, DkTSession, DKTAttachment;
 
 typedef void (^PACERDocLinkBlock)(id entry, id link);
 

@@ -7,15 +7,14 @@
 //
 
 #import "DkTDownloadManager.h"
-#import "DkTClient.h"
 #import "DkTDocketEntry.h"
 #import "DkTDocket.h"
 #import "AFDownloadRequestOperation.h"
 #import "PACERParser.h"
 #import "AFHTTPClient.h"
 
-#define kDkTBaseURL @"http://dev.DkTextension.org/DkT/"
-#define kPACERBaseURL @"https://pcl.uscourts.gov/"
+#define kDkTBaseURL @""
+#define kPACERBaseURL @""
 
 @interface DkTDownloadManager ()
 
@@ -23,7 +22,7 @@
 
 @end
 
-@implementation DkTDownloadManager
+@implementation RECAPDownloadManager
 
 +(id)sharedManager
 {

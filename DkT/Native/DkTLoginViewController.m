@@ -100,15 +100,10 @@
     [super viewDidLoad];
 	
     _selectedSession = nil;
-    CGRect frame = self.view.bounds;
-    self.contentView = [[UIView alloc] initWithFrame:frame];
-    self.contentView.layer.cornerRadius = 5.0f;
-    self.contentView.backgroundColor = [UIColor inactiveColorDark];
+    
     self.view.backgroundColor = [UIColor clearColor];
     self.view.autoresizesSubviews = YES;
     self.view.layer.cornerRadius = 5.0f;
-    self.contentView.autoresizesSubviews = YES;
-    self.contentView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.view.autoresizingMask = UIViewAutoresizingNone;
     [self.contentView addSubview:self.loginView];
     [self.view addSubview:self.contentView];
@@ -119,6 +114,19 @@
     if([DkTSession currentSession].user.username.length > 0) _status = DkTLoggedIn;
     
     else if(self.status == DkTLoggingIn) [self displayLoggingIn];
+}
+
+-(UIView *) contentView
+{
+    if(_contentView == nil)
+    {
+        _contentView = [[UIView alloc] initWithFrame:self.view.bounds];
+        _contentView.layer.cornerRadius = 5.0f;
+        _contentView.backgroundColor = [UIColor inactiveColorDark];
+        _contentView.autoresizesSubviews = YES;
+        _contentView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    }
+    return _contentView;
 }
 
 -(void) displayLoggingIn

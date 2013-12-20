@@ -382,7 +382,7 @@ float floatForEntry (id obj)
     
     
     //title
-    CGRect titleFrame = CGRectMake(0, 500, 612, 100);
+    CGRect titleFrame = CGRectMake(25, 500, 562, 100);
     CGMutablePathRef titleFramePath = CGPathCreateMutable();
     CGPathAddRect(titleFramePath, NULL, titleFrame);
     CFRange currentRange = CFRangeMake(0, 0);
@@ -448,6 +448,8 @@ float floatForEntry (id obj)
         NSInteger numberOfPages = CGPDFDocumentGetNumberOfPages(pdfRef);
         CGPDFPageRef page;
         
+        
+        
         CGContextBeginPage(context, &mediaBox);
         
         CGRect entryFrame = CGRectMake(0, 450, 600, 100);
@@ -484,7 +486,8 @@ float floatForEntry (id obj)
         CTFrameDraw(summaryFrameRef, context);
         
         
-        if((options & DkTBatchOptionsPageNumbers) != 0) DrawPageNumber(context, pageCounter, pstyleright, efont, kActiveColor.CGColor);
+        
+        if((options & DkTBatchOptionsPageNumbers) != 0) DrawPageNumber(context, pageCounter, pstyleright, efont, kActiveColor.CGColor, mediaBox);
 
         CGContextEndPage(context);
         
@@ -495,7 +498,7 @@ float floatForEntry (id obj)
             mediaBox = CGPDFPageGetBoxRect(page, kCGPDFMediaBox);
             CGContextBeginPage(context, &mediaBox);
             CGContextDrawPDFPage(context, page);
-            if((options & DkTBatchOptionsPageNumbers) != 0) DrawPageNumber(context, pageCounter, pstyleright, efont, kActiveColor.CGColor);
+            if((options & DkTBatchOptionsPageNumbers) != 0) DrawPageNumber(context, pageCounter, pstyleright, efont, kActiveColor.CGColor, mediaBox);
             CGContextEndPage(context);
             
         }
@@ -715,12 +718,12 @@ CGSize CTFrameGetSize(CTFrameRef frame)
     
 }
 
-void DrawPageNumber(CGContextRef context, NSInteger pageNumber, CTParagraphStyleRef alignment, CTFontRef font, CGColorRef color){
+void DrawPageNumber(CGContextRef context, NSInteger pageNumber, CTParagraphStyleRef alignment, CTFontRef font, CGColorRef color, CGRect mediaBox){
     
     
     CFRange currentRange = CFRangeMake(0, 0);
     CGMutablePathRef pageNumberPath = CGPathCreateMutable();
-    CGPathAddRect(pageNumberPath, NULL, CGRectMake(20, 20, 562, 20));
+    CGPathAddRect(pageNumberPath, NULL, CGRectMake(20, 20, mediaBox.size.width-50, 20));
     NSString *pageString = [NSString stringWithFormat:@"%d", pageNumber];
     CFStringRef pageStringRef = (__bridge CFStringRef)pageString;
     CFMutableAttributedStringRef pageText = CFAttributedStringCreateMutable(kCFAllocatorDefault, CFStringGetLength(pageStringRef));

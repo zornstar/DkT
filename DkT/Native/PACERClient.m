@@ -8,8 +8,6 @@
 
 #import "PACERParser.h"
 #import "PACERClient.h"
-#import "RECAPClient.h"
-
 #import "DkTAlertView.h"
 
 #import "DkTSettings.h"
@@ -17,7 +15,6 @@
 #import "DkTSessionManager.h"
 #import "DkTUser.h"
 #import "DkTDocket.h"
-#import "RECAPClient.h"
 #import "DkTDocketEntry.h"
 #import "AFDownloadRequestOperation.h"
 #import "MBProgressHUD.h"
@@ -50,10 +47,11 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
 
 @implementation PACERClient
 
+/*
 +(RECAPClient *) recapClient
 {
     return [RECAPClient sharedClient];
-}
+}*/
 
 +(NSMutableDictionary *) defaultDocketParams
 {
@@ -281,10 +279,10 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                             dispatch_async(dispatch_get_main_queue(), ^{
                                 
                                 [sender handleDocket:docket entries:docketEntries to:to from:from];
-                                if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
+                               /* if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
                                 {
                                     [[PACERClient recapClient] uploadDocket:responseObject docket:docket];
-                                }
+                                }*/
                                 
                             });
                             
@@ -365,10 +363,10 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                 NSArray *docketEntries = [PACERParser parseDocket:docket html:responseObject];
                 [sender handleDocket:docket entries:docketEntries to:to from:from];
                 
-                if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
+               /* if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
                 {
                     [[PACERClient recapClient] uploadDocket:responseObject docket:docket];
-                }
+                }*/
                 
             }
             
@@ -514,10 +512,10 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                 if([sender respondsToSelector:@selector(handleDocumentsFromDocket:entry:entries:)])
                 {
                     
-                    if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                    /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
                     {
                         [[PACERClient recapClient] uploadCasePDF:responseObject docketEntry:entry];
-                    }
+                    }*/
                     
                     NSArray *docketEntries = [PACERParser parseAppellateMultiDoc:entry html:responseObject];
                     
@@ -547,10 +545,10 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                 
                 if([sender respondsToSelector:@selector(didDownloadDocketEntry:atPath:)]) [sender didDownloadDocketEntry:entry atPath:tempFilePath];
                 
-                if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
                 {
                     [[PACERClient recapClient] uploadCasePDF:responseObject docketEntry:entry];
-                }
+                }*/
                 
             }
         }
@@ -644,11 +642,11 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                     
                 }
                 
-                if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
                 {
                     [[PACERClient recapClient] uploadCasePDF:responseObject docketEntry:entry];
                 
-                }
+                }*/
                 
                 
             }
@@ -671,12 +669,12 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                     }
                     
                     
-                    if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                    /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
                     {
                         NSData *pdf = [NSData dataWithContentsOfFile:tempFilePath];
                         [[PACERClient recapClient] uploadCasePDF:pdf docketEntry:entry];
                         
-                    }
+                    }*/
                     
                 }
                  
@@ -769,10 +767,10 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
             
             
             
-            if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
+            /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
             {
                 [[PACERClient recapClient] uploadDocket:responseObject docket:docket];
-            }
+            }*/
             
             if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
             

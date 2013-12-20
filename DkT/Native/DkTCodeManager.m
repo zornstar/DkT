@@ -440,7 +440,7 @@ NSString* const DkTCodeTypeKey = @"type";
               DkTCodeMake(@"District of Columbia", @"D.D.C.", @"dc", @"dcdce", DkTCodeTypeDistrictCourt),
               
               //Delaware
-              DkTCodeMake(@"Delaware", @"Del.", @"de", @"dedce", DkTCodeTypeDistrictCourt),
+              DkTCodeMake(@"Delaware", @"D. Del.", @"de", @"dedce", DkTCodeTypeDistrictCourt),
               
               //Florida
               DkTCodeMake(@"Florida Middle", @"M.D. Fla.", @"flm", @"flmdce", DkTCodeTypeDistrictCourt),

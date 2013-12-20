@@ -11,7 +11,7 @@
 #import "DkTDownload.h"
 #import "DkTDocumentsViewController.h"
 
-@class RECAPClient, DkTDocketEntry, DkTDocket, DkTDownloadManager;
+@class /*RECAPClient,*/ DkTDocketEntry, DkTDocket, DkTDownloadManager;
 
 @protocol DkTDownloadManagerProtocol <NSObject>
 
