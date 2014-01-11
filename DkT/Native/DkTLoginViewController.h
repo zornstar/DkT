@@ -1,6 +1,4 @@
-//
-//  RECAPLoginViewController.h
-//  RECAPp
+
 //
 //  Created by Matthew Zorn on 5/20/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -13,6 +11,8 @@
 @class FSButton;
 
 typedef NS_OPTIONS(NSUInteger, DkTPanelVisibility) {
+    DkTPanelVisibilityNone = -99,
+    DkTNoPanelVisible = -1,
     DkTLoginPanelVisible = 0,
     DkTRecentPanelVisible = 1,
     DkTLoggedInPanelVisible = 2
@@ -29,7 +29,8 @@ typedef NS_OPTIONS(NSUInteger, DkTLoginStatus) {
 @property (nonatomic, getter = isModal) BOOL modal;
 @property (nonatomic, readonly) DkTLoginStatus status;
 
--(void) toggleLoggedInView:(BOOL)visible;
 -(void) toggleUserView:(BOOL)visible;
 
 @end
+
+

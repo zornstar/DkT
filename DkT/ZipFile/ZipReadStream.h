@@ -1,6 +1,6 @@
 //
 //  ZipReadStream.h
-//  Objective-Zip v. 0.8.3
+//  Objective-Zip v. 0.7.2
 //
 //  Created by Gianluca Bertani on 28/12/09.
 //  Copyright 2009-10 Flying Dolphin Studio. All rights reserved.
@@ -32,7 +32,6 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "ARCHelper.h"
 
 #include "unzip.h"
 
@@ -46,7 +45,7 @@
 
 - (id) initWithUnzFileStruct:(unzFile)unzFile fileNameInZip:(NSString *)fileNameInZip;
 
-- (NSUInteger) readDataWithBuffer:(NSMutableData *)buffer;
+- (NSData *)readDataOfLength:(NSUInteger)length;
 - (void) finishedReading;
 
 @end

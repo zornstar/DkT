@@ -101,20 +101,17 @@
     NSDateFormatter* df = [[NSDateFormatter alloc] init];
     [df setDateFormat:@"yyyy_MM_dd"];
     
-    [accounts sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
+    NSArray *sortedAccounts = [accounts sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
        
-        NSString *str1 = [obj1 objectForKey:kSSKeychainLastModifiedKey];
-        NSString *str2 = [obj2 objectForKey:kSSKeychainLastModifiedKey];
+        NSString *d1 = [obj1 objectForKey:kSSKeychainLastModifiedKey];
+        NSString *d2 = [obj2 objectForKey:kSSKeychainLastModifiedKey];
         
-        NSDate *d1 = [df dateFromString:str1];
-        NSDate *d2 = [df dateFromString:str2];
-        
-        return [d1 compare:d2];
+        return [d2 compare:d1];
     }];
     
-    for(int i = 0; i < accounts.count; ++i)
+    for(int i = 0; i < sortedAccounts.count; ++i)
     {
-        NSDictionary *dict = [accounts objectAtIndex:i];
+        NSDictionary *dict = [sortedAccounts objectAtIndex:i];
         NSString *account = [dict objectForKey:kSSKeychainAccountKey];
         
         if(i < 4)

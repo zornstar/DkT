@@ -1,6 +1,6 @@
 //
 //  ZipException.m
-//  Objective-Zip v. 0.8.3
+//  Objective-Zip v. 0.7.2
 //
 //  Created by Gianluca Bertani on 25/12/09.
 //  Copyright 2009-10 Flying Dolphin Studio. All rights reserved.
@@ -37,7 +37,7 @@
 @implementation ZipException
 
 - (id) initWithReason:(NSString *)reason {
-	if (self= [super initWithName:@"ZipException" reason:reason userInfo:nil]) {
+	if ((self= [super initWithName:@"ZipException" reason:reason userInfo:nil])) {
 		_error= 0;
 	}
 	
@@ -45,7 +45,7 @@
 }
 
 - (id) initWithError:(NSInteger)error reason:(NSString *)reason {
-	if (self= [super initWithName:@"ZipException" reason:reason userInfo:nil]) {
+	if ((self= [super initWithName:@"ZipException" reason:reason userInfo:nil])) {
 		_error= error;
 	}
 	

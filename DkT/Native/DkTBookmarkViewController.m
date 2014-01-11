@@ -1,7 +1,4 @@
-//
-//  RECAPBookmarkViewController.m
-//  RECAPp
-//
+
 //  Created by Matthew Zorn on 5/21/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
@@ -278,7 +275,8 @@
 {
     if([self connectivityStatus])
     {
-        [[PACERClient sharedClient] retrieveDocket:docket sender:self to:@"" from:docket.updated];
+        PACERClient *client = [PACERClient sharedClient];
+        [client retrieveDocket:docket sender:self to:[client pacerDateString:[NSDate date]] from:docket.updated];
         [self.updating replaceObjectAtIndex:[self.bookmarks indexOfObject:docket] withObject:@1];
         ZSRoundCell *cell = [self cellForDocket:docket];
         UIActivityIndicatorView *spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
@@ -289,6 +287,13 @@
     }
 }
 
+-(void) handleDocketError:(DkTDocket *)docket
+{
+    NSInteger index = [self.bookmarks indexOfObject:docket];
+    ZSRoundCell *cell = [self cellForDocket:docket];
+    cell.accessoryView = nil;
+    [self.updating replaceObjectAtIndex:index withObject:@0];
+}
 -(void) handleDocket:(DkTDocket *)docket entries:(NSArray *)entries to:(NSString *)to from:(NSString *)from
 {
     if(from.length > 0)
@@ -376,7 +381,7 @@
    
     DkTDocket *item = [self.bookmarks objectAtIndex:index];
     [self.bookmarks removeObjectAtIndex:index];
-    [self.bookmarkManager deleteBookmark:item.link];
+    [self.bookmarkManager deleteBookmark:item];
         
     CGRect frame = self.tableView.frame; frame.size.height = _tableView.rowHeight * self.bookmarks.count; self.tableView.frame = frame;
     
@@ -424,7 +429,7 @@
         UIView *backgroundView = [[UIView alloc] init];
         backgroundView.backgroundColor = [UIColor clearColor];
         [_tableView setBackgroundView:backgroundView];
-        
+        IOS7(_tableView.separatorInset = UIEdgeInsetsZero;, );
         _tableView.layer.cornerRadius = 5.0;
         
     }

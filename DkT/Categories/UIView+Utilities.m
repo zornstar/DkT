@@ -26,13 +26,10 @@
         return nil;
 }
 
--(void) clipToBoundsRecursive:(UIView *)someView
+- (void) removeAllSubviews
 {
-    NSLog(@"%@", someView);
-    someView.clipsToBounds = NO;
-    for (UIView *v in someView.subviews)
-    {
-        [self clipToBoundsRecursive:v];
+    for (UIView *subview in self.subviews) {
+        [subview removeFromSuperview];
     }
 }
 

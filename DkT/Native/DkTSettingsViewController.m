@@ -1,6 +1,4 @@
-//
-//  RECAPSettingsViewController.m
-//  RECAPp
+
 //
 //  Created by Matthew Zorn on 6/24/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -54,7 +52,7 @@
                                                      name:@"loginSuccessful"
                                                    object:nil];
         
-        [[DkTSettings sharedSettings] setBoolValue:NO forKey:DkTSettingsRECAPEnabledKey];
+        [[DkTSettings sharedSettings] setBoolValue:NO forKey:DkTSettingsSecondaryClientEnabledKey];
         
         for(int i = 0; i < 4; ++i)
         {

@@ -11,7 +11,7 @@
 #import "DkTDownload.h"
 #import "DkTDocumentsViewController.h"
 
-@class /*RECAPClient,*/ DkTDocketEntry, DkTDocket, DkTDownloadManager;
+@class /*SecondaryClient,*/ DkTDocketEntry, DkTDocket, DkTDownloadManager;
 
 @protocol DkTDownloadManagerProtocol <NSObject>
 
@@ -26,14 +26,14 @@
 @interface DkTDownloadManager : NSObject <PACERClientProtocol>
 
 +(id) sharedManager;
-//+(RECAPClient *)recapClient;
+//+(SecondaryClient *)secondaryClient;
 +(PACERClient *)pacerClient;
 +(void) batchDownload:(DkTDocket *)docket entries:(NSArray *)docketEntries sender:(UIViewController<DkTDownloadManagerProtocol>*)sender;
 +(void) batchDownload:(DkTDownload *)download docket:(DkTDocket *)docket sender:(UIViewController<DkTDownloadManagerProtocol>*)sender;
 +(void) terminate;
 
 @property (nonatomic, strong) PACERClient *pacerClient;
-//@property (nonatomic, strong) RECAPClient *recapClient;
+//@property (nonatomic, strong) SecondaryClient *secondaryClient;
 @property (weak) id<DkTDownloadManagerProtocol>delegate;
 @property (nonatomic, strong) DkTDownload *batchDownload;
 

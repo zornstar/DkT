@@ -43,6 +43,7 @@
 
 -(void) config
 {
+    
     [[UINavigationBar appearance] setBackgroundImage:[[UIImage alloc] init] forBarMetrics:UIBarMetricsDefault];
     [[UINavigationBar appearance] setBackgroundColor:[UIColor activeColor]];
     NSDictionary *attributes = @{UITextAttributeTextColor:[UIColor inactiveColor]};
@@ -53,8 +54,7 @@
     [[UIToolbar appearance] setBackgroundImage:[[UIImage alloc] init] forToolbarPosition:UIToolbarPositionAny barMetrics:UIBarMetricsDefault];
     [[UIToolbar appearance] setBackgroundImage:[[UIImage alloc] init] forToolbarPosition:UIToolbarPositionAny barMetrics:UIBarMetricsLandscapePhone];
 
-    IOS7([[UIBarButtonItem appearance]
-          setBackButtonBackgroundImage:[[UIImage alloc] init]
+    IOS7([[UIBarButtonItem appearance] setBackButtonBackgroundImage:[[UIImage alloc] init]
           forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];, );
     
     [[DkTAlertView appearance] setCornerRadius:5.0];
@@ -67,8 +67,9 @@
     [[DkTAlertView appearance] setMessageColor:[UIColor darkerTextColor]];
     [[DkTAlertView appearance] setButtonColor:[UIColor inactiveColor]];
     
+    /*
     IOS7([[UITableView appearance] setSeparatorInset:UIEdgeInsetsMake(0, 0, 0, 0)];,  );
-    IOS7(, [[UIBarButtonItem appearance] setTintColor:[UIColor activeColor]];);
+    IOS7(, [[UIBarButtonItem appearance] setTintColor:[UIColor activeColor]];);*/
     if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
          [[UITabBar appearance] setSelectedImageTintColor:[UIColor inactiveColor]];
          [[UITabBar appearance] setSelectionIndicatorImage:[UIImage imageOfColor:[UIColor activeColor] size:CGSizeMake(324/3., 50)]];
@@ -81,6 +82,7 @@
     
     [[UITabBar appearance] setBackgroundColor:[UIColor inactiveColor]];
     [[UIActivityIndicatorView appearance] setColor:[UIColor darkerTextColor]];
+    
     [ZSHelpController set];
     ZSHelpController *helpController = [ZSHelpController sharedHelpController];
     helpController.targetView =  self.viewController.view;

@@ -41,6 +41,8 @@ NSString* const DkTHelpFileName = @"Help";
 {
     static dispatch_once_t pred;
     static DkTDocumentManager *sharedInstance = nil;
+   
+    
     dispatch_once(&pred, ^{
         sharedInstance = [[DkTDocumentManager alloc] init];
         sharedInstance.delegate = nil;
@@ -336,6 +338,9 @@ float floatForEntry (id obj)
     
     return TRUE;
 }
+
+
+#pragma mark - Bundling / Zipping
 
 +(void)joinDocketNamed:(NSString *)docketName destination:(NSString *)path batchOptions:(DkTBatchOptions)options completion:(DkTBatchCompletionBlock)blk
 {
@@ -775,115 +780,7 @@ void DrawPageNumber(CGContextRef context, NSInteger pageNumber, CTParagraphStyle
     
     return path;
 }
-
-/*TO DO - iCloud
-
- - (BOOL)addBackupAttributeToItemAtURL:(NSURL *)URL value:(BOOL)backup
- {
- assert([[NSFileManager defaultManager] fileExistsAtPath: [URL path]]);
+/*iCloud*/
  
- NSError *error = nil;
- BOOL success = [URL setResourceValue: [NSNumber numberWithBool: backup]
- forKey: NSURLIsExcludedFromBackupKey error: &error];
- if(!success){
- NSLog(@"Error excluding %@ from backup %@", [URL lastPathComponent], error);
- }
- return success;
- }
- 
-+(NSURL *) cloudDirectory
- {
- return [[NSFileManager defaultManager] URLForUbiquityContainerIdentifier:nil];
- }
- 
- -(void)applyAttributes:(NSString *)folderPath iCloud:(BOOL)cloud
- {
- NSArray *filesArray = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:folderPath error:nil];
- NSEnumerator *filesEnumerator = [filesArray objectEnumerator];
- NSString *fileName;
- 
- while (fileName = [filesEnumerator nextObject]) {
- 
- if([self addBackupAttributeToItemAtURL:[NSURL fileURLWithPath:[folderPath stringByAppendingPathComponent:fileName]] value:cloud])
- {
- //NSLog(@"success applying");
- }
- 
- 
- }
- 
- }
- 
- +(BOOL) iCloudAvailable
- {
- return ([[NSFileManager defaultManager] ubiquityIdentityToken] != nil);
- }
- 
-- (void)moveDocumentsToCloud {
-    
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSError *error;
-    NSArray *searchPaths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *directoryToCopyFrom = [DkTDocumentManager applicationDocumentsDirectory];
-    NSLog(@"Move notes to iCloud, copy from: %@",directoryToCopyFrom);
-    NSString *filename;
-    
-    NSDirectoryEnumerator *enumeratedDirectory = [fileManager enumeratorAtPath:directoryToCopyFrom];
-    NSURL *URLToBackup = [NSURL URLWithString:directoryToCopyFrom];
-    NSLog(@"Move notes to iCloud, backup url is: %@",URLToBackup);
-    
-    
-    while ((filename = [enumeratedDirectory nextObject])) {
-        if ([filename hasSuffix:@".pdf"] || [filename hasSuffix:@".xml"]) {
-            // NEW
-            NSURL *srcURL = [URLToBackup URLByAppendingPathComponent:filename isDirectory:NO];
-            
-            NSURL *iCloudDocumentsURL = [[fileManager URLForUbiquityContainerIdentifier:nil] URLByAppendingPathComponent:@"Documents"]; // Discovering iCloud URL
-            NSLog(@"Move notes to iCloud, doc url is: %@",iCloudDocumentsURL);
-            NSURL *destURL = [iCloudDocumentsURL URLByAppendingPathComponent:filename isDirectory:NO];
-            NSLog(@"Move notes to iCloud, dest url: %@",destURL);
-            
-            // NEW
-            if ([fileManager setUbiquitous:YES itemAtURL:srcURL destinationURL:destURL error:&error] == FALSE)
-                NSLog(@"Notes copied to the cloud: %@", error);
-            
-            NSString *path = [[searchPaths objectAtIndex:0] stringByAppendingPathComponent:@"Dockets"]; // Does directory already exist?
-            [fileManager createDirectoryAtPath:path withIntermediateDirectories:NO attributes:nil error:&error];
-            
-        }
-    }
-    
-    [self performSelector:@selector(listNotesInThecloud) withObject:self afterDelay:5.0];
-    
-    
-}
-
-- (void)listNotesInThecloud {
-    
-    
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSURL *iCloudDocumentsURL = [[fileManager URLForUbiquityContainerIdentifier:nil] URLByAppendingPathComponent:@"Documents"]; // Discovering iCloud URL
-    NSDirectoryEnumerator *enumeratedDirectory = [fileManager enumeratorAtPath:iCloudDocumentsURL.path];
-    NSString *filename;
-    while ((filename = [enumeratedDirectory nextObject])) {
-        if ([filename hasSuffix:@".pdf"]) {
-            
-            NSURL *destURL = [iCloudDocumentsURL URLByAppendingPathComponent:filename];
-            NSLog(@"Files in the cloud: %@", destURL);
-            
-        }
-        
-    }
-    
-}
- 
- -(void) setICloud:(BOOL)iCloud
- {
- _iCloud = iCloud;
- 
- [self applyAttributes:[DkTDocumentManager applicationDocumentsDirectory] iCloud:iCloud];
- [self applyAttributes:[DkTDocumentManager applicationDirectory] iCloud:iCloud];
- }
-*/
 
 @end

@@ -1,7 +1,4 @@
-//
-//  RECAPDetailViewController.m
-//  RECAPp
-//
+
 //  Created by Matthew Zorn on 5/20/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
@@ -205,24 +202,27 @@
         
         NSString *subject;
         
+        mailVC.title = self.title;
+        
         if (self.file)
         {
             self.filePath = [self.file objectForKey:DkTFilePathKey];
             NSString *docketName = [[self.filePath stringByDeletingLastPathComponent] lastPathComponent];
             docketName = decodeFromPercentEscapeString(docketName);
-            subject = [NSString stringWithFormat:@"%@ - %@", docketName, [[self.file objectForKey:DkTFilePathKey] lastPathComponent]];
+            subject = [NSString stringWithFormat:@"%@ - %@", docketName, self.title];
             [mailVC setMessageBody:[self.file objectForKey:DkTFileSummaryKey] isHTML:NO];
             NSData *data = [NSData dataWithContentsOfFile:self.filePath];
-            [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:[NSString stringWithFormat:@"%@", [[self.file objectForKey:DkTFilePathKey] lastPathComponent]]];
+            [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:[NSString stringWithFormat:@"%@ - %@", docketName, [self.file objectForKey:DkTFileEntryKey]]];
             
         }
         
         else
         {
-            subject = [NSString stringWithFormat:@"%@", self.title];
+            subject = [NSString stringWithFormat:@"%@ - %@", self.docketEntry.docket.name, self.title];
             [mailVC setMessageBody:self.docketEntry.summary isHTML:YES];
             NSData *data = [NSData dataWithContentsOfFile:self.filePath];
-            [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:[NSString stringWithFormat:@"%d - %@.pdf", self.docketEntry.entryNumber.intValue, self.title]];
+            NSString *fileName = [NSString stringWithFormat:@"%@ - %@.pdf", self.docketEntry.docket.name, self.docketEntry.entryNumber];
+            [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:fileName];
         }
         
         [mailVC setSubject:subject];

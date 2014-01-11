@@ -1,6 +1,6 @@
 //
 //  FileInZipInfo.h
-//  Objective-Zip v. 0.8.3
+//  Objective-Zip v. 0.7.2
 //
 //  Created by Gianluca Bertani on 27/12/09.
 //  Copyright 2009-10 Flying Dolphin Studio. All rights reserved.
@@ -33,7 +33,6 @@
 
 #import <Foundation/Foundation.h>
 #import "ZipFile.h"
-#import "ARCHelper.h"
 
 
 @interface FileInZipInfo : NSObject {

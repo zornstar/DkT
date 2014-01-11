@@ -1,13 +1,11 @@
-//
-//  RECAPDocketTableViewController.h
-//  RECAPp
+
 //
 //  Created by Matthew Zorn on 5/19/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
-//#import "RECAPClient.h"
+//#import "SecondaryClient.h"
 #import "DkTDocket.h"
 #import "DkTDownloadManager.h"
 #import "PSMenuItem.h"

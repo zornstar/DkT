@@ -51,7 +51,7 @@
     self.tableView.layer.borderColor = self.borderColor.CGColor;
     self.tableView.bounces = NO;
     self.tableView.showsVerticalScrollIndicator = NO;
-    
+    if([self.tableView respondsToSelector:@selector(separatorInset)]) self.tableView.separatorInset = UIEdgeInsetsZero;
     _arrow = [[FSPopoverTableArrow alloc] initWithFrame:CGRectMake(self.frame.size.width/2.-self.arrowLength/2., self.tableView.layer.borderWidth, self.arrowLength, self.arrowLength)];
     _arrow.arrowColor = [self.colors objectAtIndex:1];
     _arrow.arrowLength = self.arrowLength;

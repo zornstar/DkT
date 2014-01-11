@@ -48,9 +48,9 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
 @implementation PACERClient
 
 /*
-+(RECAPClient *) recapClient
++(SecondaryClient *) secondaryClient
 {
-    return [RECAPClient sharedClient];
+    return [secondaryClient sharedClient];
 }*/
 
 +(NSMutableDictionary *) defaultDocketParams
@@ -111,6 +111,11 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
     if([DkTSession currentSession].user.username == nil)  status = status | PACERConnectivityStatusNotLoggedIn;
     
     return status;
+}
+
+-(NSString *) pacerDateString:(NSDate *)date {
+    
+    return [self.dateFormatter stringFromDate:[NSDate date]];
 }
 
 -(BOOL) checkNetworkStatusWithAlert:(BOOL)alert
@@ -237,7 +242,11 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         }
     }
     
-    else [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+    else {
+        
+        if([sender respondsToSelector:@selector(handleFailedConnection)]) [sender handleFailedConnection];
+        [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+    }
 }
 -(void) getDistrictDocket:(DkTDocket *)docket sender:(UIViewController<PACERClientProtocol>*)sender to:(NSString *)to from:(NSString *)from
     {
@@ -270,7 +279,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                     if([sender respondsToSelector:@selector(handleDocket:entries:to:from:)])
                     {
                        
-                        docket.updated = [_dateFormatter stringFromDate:[NSDate date]];
+                        docket.updated = [self pacerDateString:[NSDate date]];
                         
                         dispatch_async(dispatch_queue_create("com.DkT.parse", 0), ^{
                             
@@ -279,7 +288,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                             dispatch_async(dispatch_get_main_queue(), ^{
                                 
                                 [sender handleDocket:docket entries:docketEntries to:to from:from];
-                               /* if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
+                               /* if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsSecondaryEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
                                 {
                                     [[PACERClient recapClient] uploadDocket:responseObject docket:docket];
                                 }*/
@@ -296,16 +305,8 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                     if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
                 } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
                     
-                    DkTAlertView *alert = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error getting docket.  Check internet connection?"];
-                    
-                    [alert addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-                        
-                        [alertView dismissAnimated:YES];
-                    }];
-                    
-                    [alert show];
-                    
                     if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+                    if([sender respondsToSelector:@selector(handleDocketError:)]) [sender handleDocketError:docket];
                     
                 }];
                 
@@ -313,16 +314,9 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                 
             } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
                 
-                DkTAlertView *alert = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error getting docket.  Check internet connection?"];
+                if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
                 
-                [alert addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-                    
-                    [alertView dismissAnimated:YES];
-                }];
-                
-                [alert show];
-                
-                [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+                if([sender respondsToSelector:@selector(handleDocketError:)]) [sender handleDocketError:docket];
             }];
             
             [self enqueueHTTPRequestOperation:queryDocketOperation];
@@ -363,9 +357,9 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                 NSArray *docketEntries = [PACERParser parseDocket:docket html:responseObject];
                 [sender handleDocket:docket entries:docketEntries to:to from:from];
                 
-               /* if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
+               /* if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsSecondaryClientEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
                 {
-                    [[PACERClient recapClient] uploadDocket:responseObject docket:docket];
+                    [[PACERClient secondaryClient] uploadDocket:responseObject docket:docket];
                 }*/
                 
             }
@@ -376,6 +370,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
             
             
             if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+            if([sender respondsToSelector:@selector(handleDocketError:)]) [sender handleDocketError:docket];
             
         }];
         
@@ -384,6 +379,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
         
         if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+        if([sender respondsToSelector:@selector(handleDocketError:)]) [sender handleDocketError:docket];
     }];
     
     [self enqueueHTTPRequestOperation:queryDocketOperation];
@@ -451,9 +447,9 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
 }
 
 
--(NSString *) apParamsWithDocket:(DkTDocket *)docket
+-(NSString *) apParamsWithDocket:(DkTDocket *)docket to:(NSString *)to from:(NSString *)from
 {
-    NSString *str = [NSString stringWithFormat:@"?incPdfMulti=Y&incDktEntries=Y&dateFrom=&dateTo=&servlet=CaseSummary.jsp&caseNum=%@&fullDocketReport=Y&confirmCharge=n",docket.case_num];
+    NSString *str = [NSString stringWithFormat:@"?incPdfMulti=Y&incDktEntries=Y&dateFrom=%@&dateTo=%@&servlet=CaseSummary.jsp&caseNum=%@&fullDocketReport=Y&confirmCharge=n",from, to, docket.case_num];
     return str;
     
 }
@@ -481,6 +477,9 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
 
 -(void) getAppellateDocument:(DkTDocketEntry *)entry sender:(id<PACERClientProtocol>)sender docket:(DkTDocket *)docket
 {
+
+#define kAppellateDocumentURL @"https://ecf.%@.uscourts.gov/cmecf/servlet/TransportRoom?servlet=ShowDoc&incPdfHeader=Y&incPdfHeaderDisp=Y&dls_id=%@&caseId=%@&pacer=t&recp=%d"
+    
     NSString *tempDir = NSTemporaryDirectory();
     
     NSString *tempFilePath = [tempDir stringByAppendingString:[entry fileName]];
@@ -494,7 +493,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         return;
     }
     
-    NSString *urlString = [NSString stringWithFormat:@"https://ecf.%@.uscourts.gov/cmecf/servlet/TransportRoom?servlet=ShowDoc&incPdfHeader=Y&incPdfHeaderDisp=Y&dls_id=%@&caseId=%@&pacer=t&recp=%d", [docket shortCourt], entry.docID, docket.cs_caseid,(int)(CFAbsoluteTimeGetCurrent()+NSTimeIntervalSince1970)];
+    NSString *urlString = [NSString stringWithFormat:kAppellateDocumentURL, [docket shortCourt], entry.docID, docket.cs_caseid,(int)(CFAbsoluteTimeGetCurrent()+NSTimeIntervalSince1970)];
     NSMutableURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     
     AFHTTPRequestOperation *getDocument = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest];
@@ -534,8 +533,6 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         }
         
         else {
-            
-            NSLog(@"%@", [operation.response.allHeaderFields description]);
             
             if ([[operation.response.allHeaderFields objectForKey:@"Content-Type"] isEqualToString:@"application/pdf"]) {
                 
@@ -627,8 +624,6 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         
         else {
             
-            NSLog(@"%@", [operation.response.allHeaderFields description]);
-            
             if ([[operation.response.allHeaderFields objectForKey:@"Content-Type"] isEqualToString:@"application/pdf"]) {
                 
                 
@@ -690,7 +685,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         }
         
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-        NSLog(@"%@", [error description]);
+     
         
         if([sender respondsToSelector:@selector(handleDocketEntryError:)]) [sender handleDocketEntryError:entry];
     }];
@@ -712,8 +707,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         AFHTTPRequestOperation *queryDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
         
         [queryDocketOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-            NSString *string = [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding];
-            NSLog(@"%@",string);
+            
             [PACERParser parseAppellateCaseSelectionPage:responseObject withDocket:docket completion:^(NSString *cs_caseid) {
     
                 if(cs_caseid.length > 0) [self getAppellateDocket:docket sender:sender to:to from:from];
@@ -722,13 +716,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                 {
                     [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
                     
-                    DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error locating docket."];
-                    [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-                        [alertView dismissAnimated:YES];
-                        
-                    }];
-                    
-                    if([DkTAlertView sharedQueue].count == 0) [alertView show];
+                    if([sender respondsToSelector:@selector(handleDocketError:)]) [sender handleDocketError:docket];
                     
                 }
                 
@@ -737,13 +725,14 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
             
             if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+            if([sender respondsToSelector:@selector(handleDocketError:)]) [sender handleDocketError:docket];
         }];
 
         [self enqueueHTTPRequestOperation:queryDocketOperation];
         return;
     }
     
-    urlString = [urlString stringByAppendingString:[self apParamsWithDocket:docket]];
+    urlString = [urlString stringByAppendingString:[self apParamsWithDocket:docket to:to from:from]];
         NSLog(@"%@", urlString);
     
         NSURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
@@ -767,9 +756,9 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
             
             
             
-            /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
+            /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsSecondaryClientEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
             {
-                [[PACERClient recapClient] uploadDocket:responseObject docket:docket];
+                [[PACERClient secondaryClient] uploadDocket:responseObject docket:docket];
             }*/
             
             if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
@@ -777,6 +766,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                 } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
                     
                 if([sender respondsToSelector:@selector(view)]) [MBProgressHUD hideAllHUDsForView:sender.view animated:YES];
+                    if([sender respondsToSelector:@selector(handleDocketError:)]) [sender handleDocketError:docket];
         }];
                             
             [self enqueueHTTPRequestOperation:queryDocketOperation];
@@ -822,12 +812,6 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
     return data;
     
     
-}
-
-
--(void) setReceiptCookie
-{
-    [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:[self receiptCookie]];
 }
 
 -(void) retrieveDocumentLink:(DkTDocketEntry *)entry sender:(UIViewController<PACERClientProtocol>*)sender
@@ -924,5 +908,9 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
     return FALSE;
 }
 
+-(void) setReceiptCookie
+{
+    [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:[self receiptCookie]];
+}
 
 @end

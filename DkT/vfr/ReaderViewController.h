@@ -39,10 +39,15 @@
 
 @interface ReaderViewController : UIViewController
 {
-    ReaderDocument *document; //mz modification
+    ReaderDocument *document; //dkt
 }
 @property (nonatomic, unsafe_unretained, readwrite) id <ReaderViewControllerDelegate> delegate;
+@property (nonatomic, strong) UITapGestureRecognizer *singleTap; //dkt
 
 - (id)initWithReaderDocument:(ReaderDocument *)object;
+
+@end
+
+@interface ReaderViewController (DkT)
 
 @end

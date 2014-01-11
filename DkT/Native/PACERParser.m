@@ -33,7 +33,7 @@
             NSArray *tds = [row childrenWithTagName:@"td"];
             
             e.entryNumber = entry.entryNumber;
-            e.attachment = [NSNumber numberWithUnsignedInt:((TFHppleElement *)[tds objectAtIndex:0]).text.integerValue];
+            e.attachment = ((TFHppleElement *)[tds objectAtIndex:0]).text;
             
             TFHppleElement *linkElement = [tds objectAtIndex:1];
             NSString *link = [[linkElement firstChildWithTagName:@"a"] objectForKey:@"href"];
@@ -81,10 +81,8 @@
     }
     
     TFHppleElement *linkElement =  [[tdArray objectAtIndex:0] firstChildWithTagName:@"a"];
-    int firstEntryNumber = [linkElement.text integerValue];
-    firstEntry.entryNumber = [NSNumber numberWithUnsignedInt:firstEntryNumber];
-    firstEntry.attachment = [NSNumber numberWithInt:0];
-    
+    firstEntry.entryNumber = linkElement.text;
+    firstEntry.attachment = @"0";
     NSString *link = [linkElement objectForKey:@"href"];
     
     
@@ -119,8 +117,8 @@
         DKTAttachment *attachment = [[DKTAttachment alloc] init];
         
         TFHppleElement *linkElement =  [[tds objectAtIndex:0] firstChildWithTagName:@"a"];
-        attachment.entryNumber = [NSNumber numberWithUnsignedInt:firstEntryNumber];
-        attachment.attachment = [NSNumber numberWithUnsignedInt:[linkElement.text integerValue]];
+        attachment.entryNumber = firstEntry.entryNumber;
+        attachment.attachment = linkElement.text;
         attachment.docket = entry.docket;
         
         NSString *link = [linkElement objectForKey:@"href"];
@@ -342,7 +340,9 @@
 +(NSArray *)parseAppellateDocket:(DkTDocket *)docket html:(NSData *)html
 {
     @try {
+    
         TFHpple *hpple = [TFHpple hppleWithData:html isXML:NO];
+        NSLog(@"%@",[[NSString alloc] initWithData:html encoding:NSUTF8StringEncoding]);
         TFHppleElement *dktEntry = [hpple peekAtSearchWithXPathQuery:@"//form[@name='dktEntry']"];
         TFHppleElement *table = [[[[dktEntry firstChildWithTagName:@"table"] firstChildWithTagName:@"tr"] firstChildWithTagName:@"td"]firstChildWithTagName:@"table"] ;
         
@@ -364,22 +364,27 @@
                 
                 TFHppleElement *linkElement = [col2 firstChildWithTagName:@"a"];
                 
-                NSNumber *num =[NSNumber numberWithUnsignedInt:linkElement.text.integerValue];
+                
+                NSString *link = [linkElement objectForKey:@"href"];
+                
+                if(link.length > 0) [entry.urls setObject:link forKey:PACERDOCURLKey];
+                
+                NSString *num;
                 
                 if(linkElement == nil)
                 {
                     NSString *raw = col2.raw;
                     raw = [raw substringFromIndex:[raw rangeOfString:@"/>"].location+2];
                     raw = [raw substringToIndex:[raw rangeOfString:@"<"].location];
-                    raw = [raw stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-                    num = [NSNumber numberWithInteger:raw.integerValue];
                 }
                 
-                entry.entryNumber = num;
+                else
+                {
+                    num = (linkElement.text.length > 0) ? [NSString stringWithFormat:@"%@",linkElement.text] : [NSString stringWithFormat:@"%@",[link lastPathComponent]];
+                }
                 
-                NSString *link = [linkElement objectForKey:@"href"];
                 
-                if(link.length > 0) [entry.urls setObject:link forKey:PACERDOCURLKey];
+                entry.entryNumber = [num stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
                 
                 entry.summary = ((TFHppleElement *)[cols objectAtIndex:2]).raw;//[PACERParser stripBracketedFromString:[e attributeForName:@"text"].stringValue];
                 
@@ -480,7 +485,7 @@
                     }
                     
                     
-                    if([[link_entry text] length] > 0) entry.entryNumber = [NSNumber numberWithUnsignedInt:[[link_entry text] integerValue]];
+                    if([[link_entry text] length] > 0) entry.entryNumber = [link_entry text];
                     
                     entry.docLinkParam = [link_entry objectForKey:@"id"];
                     
@@ -590,7 +595,7 @@
                         
                     }
                     
-                    entry.entryNumber = [NSNumber numberWithUnsignedInt:[[link_entry text] integerValue]];
+                    entry.entryNumber = [link_entry text];
                     
                 }
                 

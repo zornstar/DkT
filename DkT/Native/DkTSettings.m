@@ -9,10 +9,11 @@
 #import "DkTSettings.h"
 #import "PACERClient.h"
 
-NSString* const DkTSettingsRECAPEnabledKey = @"DkTSettingsRECAPEnabledKey";
+NSString* const DkTSettingsSecondaryClientEnabledKey = @"DkTSettingsSecondaryClientEnabledKey";
 NSString* const DkTSettingsAutoLoginKey = @"DkTSettingsAutoLoginKey";
 NSString* const DkTSettingsAddTOCKey = @"DkTSettingsTOCKey";
 NSString* const DkTSettingsMostRecentKey = @"DkTSettingsMostRecentFirst";
+NSString* const DkTVersionNumber = @"1.0";
 
 @implementation DkTSettings
 

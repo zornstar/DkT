@@ -31,7 +31,7 @@
 -(void) setup
 {
     
-    NSString *aboutString = @"DkT is built on top of PACER to help browse, manage, and share federal court dockets and documents with ease and less expense.\n\nDkT is free of charge __ License, available at ___. Normal PACER charges apply.\n\nDkT is not affiliated with PACER or any other institution.  DkT does not store or send any personal data except for use with PACER.";
+    NSString *aboutString = @"DkT is an iOS app that interfaces with PACER to help browse, manage, and share federal court dockets and documents with greater ease and less expense.\n\nDkT is  free and open-source, but normal PACER charges apply.  DkT is not affiliated with PACER or any other institution, and does not store or send  personal data except for use with PACER.\n\nGo to www._.com for more information.";
     NSAttributedString *attrString = [[NSAttributedString alloc] initWithString:aboutString];
     UITextView *aboutView = [[UITextView alloc] initWithFrame:CGRectZero];
     aboutView.attributedText = attrString;

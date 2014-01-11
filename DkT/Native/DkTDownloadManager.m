@@ -1,6 +1,4 @@
-//
-//  DkTDownloader.m
-//  DkTp
+
 //
 //  Created by Matthew Zorn on 5/19/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -14,9 +12,9 @@
 #import "PACERParser.h"
 #import "DkTSettings.h"
 #import "PACERClient.h"
-//#import "RECAPClient.h"
+//#import "SecondaryClient.h"
 
-#define kDkTBaseURL @"http://dev.recapextension.org/recap/"
+#define kSecondaryClientBaseURL @""
 #define kPACERBaseURL @"https://pcl.uscourts.gov/"
 
 @interface DkTDownloadManager ()
@@ -46,11 +44,11 @@
 }
 
 /*
--(RECAPClient *)recapClient
+-(SecondaryClient *)secondaryClient
 {
     if(_recapClient == nil)
     {
-        _recapClient = [[RECAPClient alloc] init];
+        _recapClient = [[SecondaryClient alloc] init];
     }
     
     return _recapClient;
@@ -62,9 +60,9 @@
 }
 
 /*
-+(RECAPClient *)recapClient
++(SecondaryClient *)secondaryClient
 {
-    return [[DkTDownloadManager sharedManager] recapClient];
+    return [[DkTDownloadManager sharedManager] secondaryClient];
 }*/
 
 +(void) batchDownload:(DkTDownload *)download docket:(DkTDocket *)docket sender:(UIViewController<DkTDownloadManagerProtocol> *)sender

@@ -1,7 +1,4 @@
 //
-//  RECAPSettingsCell.m
-//  RECAPp
-//
 //  Created by Matthew Zorn on 6/25/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //

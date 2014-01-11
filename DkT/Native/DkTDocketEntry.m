@@ -1,6 +1,4 @@
-//
-//  RECAPDocketEntry.m
-//  RECAPp
+
 //
 //  Created by Matthew Zorn on 5/19/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -9,7 +7,6 @@
 #import "DkTDocketEntry.h"
 #import "AFNetworking.h"
 #import "DkTConstants.h"
-
 #import <objc/runtime.h>
 
 
@@ -29,7 +26,7 @@ NSString * const kWriteableProperties[] = {
     {
         _urls = [NSMutableDictionary dictionaryWithCapacity:4];
         _lookupStatus = DktEntryStatusNone;
-        self.entryNumber = @0;
+        _entryNumber = @"0";
     }
     
     return self;
@@ -210,7 +207,7 @@ NSString * const kWriteableProperties[] = {
 
 -(NSString *)entryString
 {
-    return [NSString stringWithFormat:@"%d",self.entryNumber.intValue];
+    return self.entryNumber;
 }
 
 -(NSString *)docID
@@ -223,11 +220,11 @@ NSString * const kWriteableProperties[] = {
 
 -(NSString *)entryString
 {
-    return [NSString stringWithFormat:@"%d.%d",self.entryNumber.intValue, self.attachment.intValue];
+    return [NSString stringWithFormat:@"%@.%@",self.entryNumber, self.attachment];
 }
 
 -(NSString *)fileName
 {
-    return [NSString stringWithFormat:@"Entry #%d-%d.pdf", self.entryNumber.intValue, self.attachment.intValue];
+    return [NSString stringWithFormat:@"Entry #%@-%@.pdf", self.entryNumber, self.attachment];
 }
 @end

@@ -8,10 +8,11 @@
 
 #import <Foundation/Foundation.h>
 
-extern NSString* const DkTSettingsRECAPEnabledKey;
+extern NSString* const DkTSettingsSecondaryClientEnabledKey;
 extern NSString* const DkTSettingsAutoLoginKey;
 extern NSString* const DkTSettingsAddTOCKey;
 extern NSString* const DkTSettingsMostRecentKey;
+extern NSString* const DkTVersionNumber;
 
 @interface DkTSettings : NSObject
 

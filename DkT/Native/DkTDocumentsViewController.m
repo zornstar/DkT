@@ -1,6 +1,4 @@
-//
-//  RECAPDocumentsViewController.m
-//  RECAPp
+
 //
 //  Created by Matthew Zorn on 5/21/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -40,6 +38,7 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
     if (self) {
         
         self.dockets = [[DkTDocumentManager sharedManager] dockets];
+        
         [DkTDocumentManager setDelegate:self];
         _batchPath = nil; _zipPath = nil;
         
@@ -104,53 +103,6 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
 }
 
 
--(UILongPressGestureRecognizer *) longPress
-{
-    return [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
-}
-
--(UIPinchGestureRecognizer *) pinchGesture
-{
-    return [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(handlePinchGesture:)];
-}
-
--(void) handleLongPress:(UILongPressGestureRecognizer *)sender
-{
-    if(sender.state == UIGestureRecognizerStateBegan)
-    {
-        UIView *view = [sender view];
-        UIView *superview = [view superview];
-        
-        while (![superview isKindOfClass:[UITableViewCell class]]) {
-            superview = [superview superview];
-        };
-        
-        
-        UITableViewCell *cell = (UITableViewCell *)superview;
-        NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
-        
-        if(indexPath.row == 0) [self menuForIndexPath:indexPath];
-        
-        else
-        {
-            NSMutableDictionary *sectionDictionary = [self.dockets objectAtIndex:indexPath.section];
-            DkTFile *file = [[sectionDictionary objectForKey:DkTFileDocketFilesKey] objectAtIndex:indexPath.row-1];
-            NSURL *url = [NSURL fileURLWithPath:[file objectForKey:DkTFilePathKey]];
-            _doccontroller = [UIDocumentInteractionController interactionControllerWithURL:url];
-            _doccontroller.delegate = self;
-            if(![_doccontroller presentOpenInMenuFromRect:cell.contentView.frame inView:self.view animated:YES])
-            {
-                DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"No PDF Application" andMessage:@"You do not have an external application for reading pdfs."];
-                [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-                    [alertView dismissAnimated:YES];
-                }];
-                
-                [alertView show];
-            }
-        }
-    }
-    
-}
 
 
 -(void) zipIndexPath:(NSIndexPath*)indexPath
@@ -297,6 +249,7 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
         _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _tableView.clipsToBounds = YES;
         _tableView.bounces = NO;
+        IOS7(_tableView.separatorInset = UIEdgeInsetsZero;,);
         _tableView.scrollEnabled = YES;
         _tableView.showsVerticalScrollIndicator = NO;
         _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
@@ -712,6 +665,57 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
     [menu setTargetRect:rect inView:self.tableView];
     [menu setMenuVisible:YES];
 }
+
+#pragma mark - Gestures
+
+-(UILongPressGestureRecognizer *) longPress
+{
+    return [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+}
+
+-(UIPinchGestureRecognizer *) pinchGesture
+{
+    return [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(handlePinchGesture:)];
+}
+
+-(void) handleLongPress:(UILongPressGestureRecognizer *)sender
+{
+    if(sender.state == UIGestureRecognizerStateBegan)
+    {
+        UIView *view = [sender view];
+        UIView *superview = [view superview];
+        
+        while (![superview isKindOfClass:[UITableViewCell class]]) {
+            superview = [superview superview];
+        };
+        
+        
+        UITableViewCell *cell = (UITableViewCell *)superview;
+        NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
+        
+        if(indexPath.row == 0) [self menuForIndexPath:indexPath];
+        
+        else
+        {
+            NSMutableDictionary *sectionDictionary = [self.dockets objectAtIndex:indexPath.section];
+            DkTFile *file = [[sectionDictionary objectForKey:DkTFileDocketFilesKey] objectAtIndex:indexPath.row-1];
+            NSURL *url = [NSURL fileURLWithPath:[file objectForKey:DkTFilePathKey]];
+            _doccontroller = [UIDocumentInteractionController interactionControllerWithURL:url];
+            _doccontroller.delegate = self;
+            if(![_doccontroller presentOpenInMenuFromRect:cell.contentView.frame inView:self.view animated:YES])
+            {
+                DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"No PDF Application" andMessage:@"You do not have an external application for reading pdfs."];
+                [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                    [alertView dismissAnimated:YES];
+                }];
+                
+                [alertView show];
+            }
+        }
+    }
+    
+}
+
 
 -(void) viewDidDisappear:(BOOL)animated
 {

@@ -7,10 +7,8 @@
 
 @interface UIView (Utilities)
 
--(void) roundCorners:(UIRectCorner)corners;
+- (void) roundCorners:(UIRectCorner)corners;
 - (UIViewController *)viewController;
-
-/* Debug */
--(void) clipToBoundsRecursive:(UIView *)someView;
+- (void) removeAllSubviews;
 
 @end

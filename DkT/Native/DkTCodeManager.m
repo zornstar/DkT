@@ -505,7 +505,7 @@ NSString* const DkTCodeTypeKey = @"type";
               DkTCodeMake(@"Missouri Western", @"S.D. Mo.", @"mow", @"mowdce", DkTCodeTypeDistrictCourt),
               
               //Minnesota
-              DkTCodeMake(@"Minnesota", @"Bankr. D. Minn.", @"mn", @"mnbke", DkTCodeTypeDistrictCourt),
+              DkTCodeMake(@"Minnesota", @"D. Minn.", @"mn", @"mndce", DkTCodeTypeDistrictCourt),
               
               //Montana
               DkTCodeMake(@"Montana", @"D. Mont.", @"mt", @"mtdce",DkTCodeTypeDistrictCourt),
@@ -588,7 +588,7 @@ NSString* const DkTCodeTypeKey = @"type";
               DkTCodeMake(@"Vermont", @"D. Vt.", @"vt", @"vtdce", DkTCodeTypeDistrictCourt),
               
               //Virgin Islands
-              DkTCodeMake(@"Virgin Islands", @"Bankr. D.V.I.", @"vi", @"vibke",DkTCodeTypeBankruptcyCourt),
+              DkTCodeMake(@"Virgin Islands", @"Bankr. D.V.I.", @"vi", @"vidce",DkTCodeTypeBankruptcyCourt),
               
               //Virginia
               DkTCodeMake(@"Virginia Eastern", @"E.D. Va.", @"vae",@"vaedce",DkTCodeTypeDistrictCourt),

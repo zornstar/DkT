@@ -15,8 +15,8 @@
 @property(nonatomic, assign) UIColor *thumbTintColor;
 
 @property(nonatomic,getter=isOn) BOOL on;
-//mz
-@property (nonatomic) BOOL animateWithTouchEnabled;
+
+@property (nonatomic) BOOL animateWithTouchEnabled; //added to original source
 
 - (id)initWithFrame:(CGRect)frame;
 

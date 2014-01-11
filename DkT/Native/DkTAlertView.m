@@ -17,7 +17,6 @@
     if(self = [super initWithTitle:title andMessage:message])
     {
         self.backgroundStyle = SIAlertViewBackgroundStyleSolid;
-        self.shadowRadius = 0;
     }
     
     return self;

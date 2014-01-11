@@ -1,6 +1,4 @@
-//
-//  RECAPSearchResultsViewController.m
-//  RECAPp
+
 //
 //  Created by Matthew Zorn on 5/27/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -81,7 +79,7 @@
     if(_tableView == nil)
     {
         _tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
-        
+        IOS7(_tableView.separatorInset = UIEdgeInsetsZero;,);
         _tableView.rowHeight = PAD_OR_POD(65, 52);
         CGRect frame;
         frame.size.height = self.view.frame.size.height * (PAD_OR_POD(.7, .6)) + self.results.count * self.tableView.sectionHeaderHeight;
@@ -382,13 +380,21 @@
 
 -(void) handleDocketError:(DkTDocket *)docket
 {
-    DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error loading docket."];
+    [MBProgressHUD hideAllHUDsForView:self.view animated:YES];
     
-    [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-        [alertView dismissAnimated:YES];
-    }];
-    
-    [alertView show];
+    if(self.presentedViewController == nil)
+    {
+        DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Search" andMessage:@"Error loading docket."];
+        
+        [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+            
+            [alertView dismissAnimated:YES];
+            
+        }];
+        
+        [alertView show];
+    }
+
     
 }
 

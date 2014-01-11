@@ -52,7 +52,6 @@ typedef NSMutableDictionary DkTDocketFile;
 +(NSString *) docketsFolder;
 +(NSString *) pathToDocket:(NSString *)docketName;
 +(NSString *) helpDocumentPath;
-
 +(void)joinDocketNamed:(NSString *)docketName destination:(NSString *)path batchOptions:(DkTBatchOptions)options completion:(DkTBatchCompletionBlock)blk;
 +(NSString *) saveDocumentAtTempPath:(NSString *)tempPath toSavedDocketNamed:(NSString *)name;
 +(void) clearTempFiles;
@@ -60,7 +59,7 @@ typedef NSMutableDictionary DkTDocketFile;
 +(void) localPathForDocket:(DkTDocket *)docket entry:(DkTDocketEntry *)entry completion:(DkTLocalDocumentBlock)blk;
 +(void) setDelegate:(id<DkTDocumentManagerDelegate>)delegate;
 +(NSString *) zipDocketAtPath:(NSString *)filePath;
-+(NSString *)saveDocketEntry:(DkTDocketEntry *)entry atTempPath:(NSString *)tempPath;
++(NSString *) saveDocketEntry:(DkTDocketEntry *)entry atTempPath:(NSString *)tempPath;
 
 -(void) sync;
 -(void) removeFile:(DkTFile *)file;

@@ -1,7 +1,4 @@
-//
-//  RECAPDocket.m
-//  RECAPp
-//
+
 //  Created by Matthew Zorn on 5/19/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
@@ -83,7 +80,7 @@ NSString* decodeFromPercentEscapeString(NSString *string) {
     switch (self.type) {
         case DocketTypeAppellate: {
             if([self.court rangeOfString:@"fc"].location != NSNotFound) str = @"cafc";
-            else str = [@"ca" stringByAppendingString:[[self.court substringToIndex:2] stringByReplacingOccurrencesOfString:@"0" withString:@""]];
+            else str = [NSString stringWithFormat:@"ca%d",[[self.court substringToIndex:2] intValue]];
         }
             break;
         case DocketTypeBankruptcy:

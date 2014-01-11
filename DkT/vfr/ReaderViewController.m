@@ -367,7 +367,8 @@
 	[self.view addGestureRecognizer:doubleTapTwo];
 
 	[singleTapOne requireGestureRecognizerToFail:doubleTapOne]; // Single tap requires double tap to fail
-
+    self.singleTap = singleTapOne; //dkt
+    
 	contentViews = [NSMutableDictionary new]; lastHideTime = [NSDate date];
 }
 
@@ -923,6 +924,15 @@
 	{
 		if (printInteraction != nil) [printInteraction dismissAnimated:NO];
 	}
+}
+
+@end
+
+@implementation ReaderViewController (DkT)
+
+-(BOOL) gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
+{
+    return YES;
 }
 
 @end

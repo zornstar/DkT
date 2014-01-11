@@ -1,6 +1,4 @@
-//
-//  RECAPSettingsTableViewController.m
-//  RECAPp
+
 //
 //  Created by Matthew Zorn on 6/26/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -42,7 +40,7 @@
 {
     self.controls = @[[self switchWithKey:DkTSettingsAutoLoginKey], [self switchWithKey:DkTSettingsAddTOCKey], [self switchWithKey:DkTSettingsMostRecentKey]];
     self.names = @[@"Auto Login on\nStart Up", @"Print Table of Contents in Bundle", @"Most Recent Docket Entries First"]; //, @"Auto-Login"];
-    self.descriptions = @[@"Automatically login as last user on startup", @"Add a Table of Contents and page numbers to docket bundles.", @"Display the most recent docket entries at the top of the docket list."]; //,@"Automatically login as the last user"];
+    self.descriptions = @[@"Automatically login as last user/client on startup", @"Add a Table of Contents and page numbers to docket bundles.", @"Display the most recent docket entries at the top of the docket list."]; //,@"Automatically login as the last user"];
     self.contentView = self.tableView;
 }
 
@@ -54,9 +52,9 @@
     BOOL value = [[[DkTSettings sharedSettings] valueForKey:key] boolValue];
     
     mySwitch.on = value;
-    mySwitch.tintColor = kActiveColorLight;
-    mySwitch.offTintColor = kActiveColorLight;
-    mySwitch.onTintColor = kInactiveColorDark;
+    mySwitch.tintColor = kInactiveColorDark;
+    mySwitch.offTintColor = kInactiveColorDark;
+    mySwitch.onTintColor = kActiveColorLight;
     mySwitch.animateWithTouchEnabled = NO;
     [mySwitch addActionForControlEvents:UIControlEventValueChanged usingBlock:^(UIControl *sender, UIEvent *event) {
         
@@ -118,6 +116,7 @@
         _tableView.dataSource = self;
         _tableView.rowHeight = 40.0f;
         _tableView.backgroundColor = [UIColor clearColor];
+        IOS7(_tableView.separatorInset = UIEdgeInsetsZero;,);
         _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
         
     }

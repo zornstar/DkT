@@ -1505,7 +1505,7 @@ NS_INLINE void safelyExecuteCompletionBlockOnMainThread(PKDefaultCompletionHandl
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
 {
     
-    [gestureRecognizer requireGestureRecognizerToFail:otherGestureRecognizer];
+    if(![otherGestureRecognizer isKindOfClass:[UITapGestureRecognizer class]]) [gestureRecognizer requireGestureRecognizerToFail:otherGestureRecognizer];
     return YES;
 }
 

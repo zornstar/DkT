@@ -6,9 +6,9 @@
 
 typedef enum : NSUInteger {
     
-    DktEntryStatusNone = (0x1 << 0), //0x00000001
-    DktEntryStatusLocal = (0x1 << 1), //0x00000010
-    DktEntryStatusRECAP = (0x1 << 2) //0x00000100
+    DktEntryStatusNone = (0x1 << 0),
+    DktEntryStatusLocal = (0x1 << 1),
+    DktEntryStatusSecondaryClient = (0x1 << 2) 
     
 } DkTEntryLookupStatus;
 
@@ -23,7 +23,7 @@ extern NSString * const kWriteableProperties[];
 
 @property (nonatomic, strong) NSMutableDictionary *urls;
 
-@property (nonatomic, copy) NSNumber *entryNumber;
+@property (nonatomic, copy) NSString *entryNumber;
 @property (nonatomic) DkTEntryLookupStatus lookupStatus;
 
 @property (nonatomic, copy) NSString *docID; //1021132
@@ -52,6 +52,6 @@ extern NSString * const kWriteableProperties[];
 
 @interface DKTAttachment : DkTDocketEntry
 
-@property (nonatomic, copy) NSNumber *attachment;
+@property (nonatomic, copy) NSString *attachment;
 
 @end

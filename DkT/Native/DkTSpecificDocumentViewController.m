@@ -37,7 +37,7 @@
     [super viewDidLoad];
 	self.view.backgroundColor = [UIColor inactiveColor];
     
-    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 400, MAXFLOAT)];
+    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, PAD_OR_POD(400,225), MAXFLOAT)];
     label.numberOfLines = 0;
     label.textColor = [UIColor activeColor];
     label.textAlignment = NSTextAlignmentLeft;

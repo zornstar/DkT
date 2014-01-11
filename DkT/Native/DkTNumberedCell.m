@@ -1,6 +1,4 @@
-//
-//  RECAPNumberedCell.m
-//  RECAPp
+
 //
 //  Created by Matthew Zorn on 5/27/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -15,7 +13,7 @@
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self) {
        // self.imageView.image = [[UIImage alloc] init];
-        self.indentationWidth = 20.;
+         IOS7(self.indentationWidth = 30;, self.indentationWidth = 20;);
         self.indentationLevel = 1.;
         _numberLabel = [[UILabel alloc] initWithFrame:CGRectMake(5, 0, 22, 80)];
         _numberLabel.adjustsFontSizeToFitWidth = YES;
@@ -30,7 +28,18 @@
     return self;
 }
 
-
+-(void) setNumber:(NSString *)number
+{
+    _numberLabel.text = number;
+    
+    if(_numberLabel.text.length > 3)
+    {
+        _numberLabel.frame = CGRectMake(0, 5, 22, self.frame.size.height-10);
+       _numberLabel.transform = CGAffineTransformMakeRotation(-M_PI/2);
+        
+        _numberLabel.autoresizingMask = UIViewAutoresizingFlexibleHeight;
+    }
+}
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated
 {
     [super setSelected:selected animated:animated];

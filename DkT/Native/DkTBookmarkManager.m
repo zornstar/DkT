@@ -28,9 +28,7 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     static dispatch_once_t once;
     static id sharedInstance;
     dispatch_once(&once, ^{
-        
         NSString* path = [DkTDocumentManager applicationDocumentsDirectory];
-        
         path = [path stringByAppendingPathComponent:@"DkTBookmarks.xml"];
         sharedInstance = [[DkTBookmarkManager alloc] initWithBookmarkFile:path];
     });
@@ -64,6 +62,10 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
 +(NSString *)bookmarkFolder
 {
     return [DkTDocumentManager docketsFolder];
+}
+
++(NSString *) bookmarkPath:(DkTDocket *)docket {
+    return [NSString stringWithFormat:@"%@/%@-%@.%@", [DkTBookmarkManager bookmarkFolder],docket.case_num,docket.court,@"xml"];
 }
 
 -(GDataXMLElement *) elementWithDocketEntry:(DkTDocketEntry *)entry
@@ -152,33 +154,33 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     return;
 }
 
--(BOOL) deleteBookmark:(NSString *)urlString
+-(BOOL) deleteBookmark:(DkTDocket *)item
 {
-    GDataXMLDocument *doc = [self document];
     
-    NSArray *children = [doc.rootElement children];
-    
-    for(GDataXMLElement *child in children)
-    {
-        NSArray *properties = [child children];
+    if([[NSFileManager defaultManager] removeItemAtPath:[DkTBookmarkManager bookmarkPath:item] error:nil]) {
         
-        for(GDataXMLElement *property in properties)
+        GDataXMLDocument *doc = [self document];
+        
+        NSArray *children = [doc.rootElement children];
+        
+        for(GDataXMLElement *child in children)
         {
-            if([property.name isEqualToString:@"url"] && [property.stringValue isEqualToString:urlString])
+            NSArray *properties = [child children];
+            
+            for(GDataXMLElement *property in properties)
             {
-                [doc.rootElement removeChild:child];
-                [doc.rootElement.XMLString writeToFile:self.filePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
-                return TRUE;
+                if([property.name isEqualToString:@"url"] && [property.stringValue isEqualToString:item.link])
+                {
+                    [doc.rootElement removeChild:child];
+                    [doc.rootElement.XMLString writeToFile:self.filePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+                    
+                    return TRUE;
+                }
             }
         }
     }
     
     return FALSE;
-}
-
--(void) clearAllBookmarks
-{
-    [self create];
 }
 
 -(NSArray *)bookmarks
@@ -200,6 +202,11 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
                 if ([property.name isEqualToString:@"case_num"])
                 {
                     item.case_num = property.stringValue;
+                }
+                
+                else if ([property.name isEqualToString:@"cs_caseid"])
+                {
+                    item.cs_caseid = property.stringValue;
                 }
                 
                 else if([property.name isEqualToString:@"name"])
@@ -280,7 +287,7 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
         [[NSFileManager defaultManager] createDirectoryAtPath:[DkTBookmarkManager bookmarkFolder] withIntermediateDirectories:NO attributes:nil error:nil];
     }
     
-    NSString *path = [NSString stringWithFormat:@"%@/%@.%@", [DkTBookmarkManager bookmarkFolder],docket.case_num,@"xml"];
+    NSString *path = [DkTBookmarkManager bookmarkPath:docket];
     
     [root.XMLString writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
     
@@ -291,7 +298,8 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
  
     @autoreleasepool {
         
-        NSString *path = [NSString stringWithFormat:@"%@/%@.%@", [DkTBookmarkManager bookmarkFolder],docket.case_num,@"xml"];
+        
+        NSString *path = [DkTBookmarkManager bookmarkPath:docket];
         
         NSData *data = [[NSData alloc] initWithContentsOfFile:path];
         
@@ -412,7 +420,7 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     [dateFormatter setTimeStyle:NSDateFormatterNoStyle];
     [dateFormatter setDateFormat:@"MM/dd/yyyy"];
     
-    NSString *path = [NSString stringWithFormat:@"%@/%@.%@", [DkTBookmarkManager bookmarkFolder],docket.case_num,@"xml"];
+    NSString *path = [DkTBookmarkManager bookmarkPath:docket];
     
     NSData *data = [[NSData alloc] initWithContentsOfFile:path];
     
@@ -422,13 +430,9 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     updateElement.stringValue = [dateFormatter stringFromDate:[NSDate date]];
     GDataXMLElement *entryRoot = [[doc.rootElement elementsForName:DkTBookmarkDocketEntriesKey] objectAtIndex:0];
     
-    GDataXMLElement *updated = [[doc.rootElement elementsForName:DkTBookmarkDocketUpdateKey] objectAtIndex:0];
-    [doc.rootElement removeChild:updated];
-    updated = [GDataXMLElement elementWithName:DkTBookmarkDocketUpdateKey stringValue:[dateFormatter stringFromDate:[NSDate date]]];
-    [doc.rootElement addChild:updated];
-    
     if(entries.count == 0){
         [self updateBookmark:docket];
+        [doc.rootElement.XMLString writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
         return 0;
     }
     
@@ -449,6 +453,7 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     if ([date1 compare:date2] == NSOrderedAscending)
     {
         [self updateBookmark:docket];
+        [doc.rootElement.XMLString writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
         return 0;
     }
     //allow
@@ -464,7 +469,6 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
                 break;
             }
             
-            
         }
     }
     
@@ -474,9 +478,9 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
         [entryRoot addChild:element];
     }
     
+    [self updateBookmark:docket];
     [doc.rootElement.XMLString writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
     
-    [self updateBookmark:docket];
     return entries.count - idx;
 }
 

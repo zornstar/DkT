@@ -1,6 +1,4 @@
-//
-//  RECAPDocketTableViewController.m
-//  RECAPp
+
 //
 //  Created by Matthew Zorn on 5/19/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -9,13 +7,11 @@
 #import "DkTSingleton.h"
 #import "DkTDocketTableViewController.h"
 #import "DkTDetailViewController.h"
-
-//extensions
 #import "UIImage+Utilities.h"
 #import "UIResponder+FirstResponder.h"
 #import "UIView+Utilities.h"
 #import "UIViewController+MJPopupViewController.h"
-
+#import "UIScrollView+SVPullToRefresh.h"
 #import "DkTLoginViewController.h"
 #import "ReaderViewController.h"
 #import "DkTSpecificDocumentViewController.h"
@@ -48,15 +44,20 @@ typedef enum {
 @property (nonatomic) CGFloat expandedHeight;
 @property (nonatomic, strong) UITableViewCell *expandedCell;
 @property (nonatomic) UISwipeGestureRecognizerDirection direction;
+
 @property (nonatomic, getter = isBatching) BOOL batching;
 @property (nonatomic) NSInteger completedDownloads;
+
+@property (nonatomic, strong) DkTDocketEntry *activeEntry;
 @property (nonatomic, strong) DkTDownload *batchDownload;
 @property (nonatomic, strong) UILabel *progressLabel;
 @property (nonatomic, strong) UIBarButtonItem *downloadDocketBarButtonItem;
 @property (nonatomic, strong) NSMutableArray *filteredEntries;
 @property (nonatomic, strong) UISearchBar *searchBar;
+
 @property (nonatomic, strong) UIView *batchDownloadView;
 @property (nonatomic, strong) UIView *docketInfoView;
+@property (nonatomic, strong) UILabel *lastUpdated;
 
 @end
 
@@ -67,10 +68,7 @@ typedef enum {
     self = [super init];
     if (self) {
         self.contentSizeForViewInPopover = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ?  CGSizeMake(320.0, 600.0) : CGSizeMake(300.0, 600.0);
-        _root = YES;
-        _local = NO;
-        _completedDownloads = 0;
-        _expandedRow = -1;
+        self.root = YES; self.local = NO; self.completedDownloads = 0; self.expandedRow = -1;
     }
     return self;
 }
@@ -79,25 +77,21 @@ typedef enum {
 {
     [super viewDidLoad];
     
-    if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsMostRecentKey] boolValue])
-    {
-        self.docketEntries = [[self.docketEntries reverseObjectEnumerator] allObjects];
-    }
-    self.navigationController.navigationBarHidden = NO;
-    self.navigationController.toolbarHidden = NO;
+    BOOL reverse = [[[DkTSettings sharedSettings] valueForKey:DkTSettingsMostRecentKey] boolValue];
+    if(reverse) self.docketEntries = [[self.docketEntries reverseObjectEnumerator] allObjects];
+   
+    self.navigationController.navigationBarHidden = NO; self.navigationController.toolbarHidden = NO;
     self.batching = NO;
     self.view.clipsToBounds = NO;
     self.filteredEntries = [self.docketEntries mutableCopy];
-    CGRect frame = self.view.frame;
-    self.tableView = [[UITableView alloc] initWithFrame:frame style:UITableViewStylePlain];
-    self.tableView.delegate = self;
-    self.tableView.dataSource = self;
+    self.tableView = [[UITableView alloc] initWithFrame:self.view.frame style:UITableViewStylePlain];
+    IOS7(self.tableView.separatorInset = UIEdgeInsetsZero;, );
+    self.tableView.delegate = self; self.tableView.dataSource = self;
+    
     [self toggleProgressLabel:DkTToolbarInfoVisible];
     [self configureTableView];
     [self.view addSubview:self.tableView];
     [self setupButtons];
-    
-    self.tableView.contentOffset = CGPointMake(0, self.searchBar.frame.size.height);
 }
 
 
@@ -106,10 +100,42 @@ typedef enum {
     if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone && !self.isBeingPresented)
     {
          [self.tableView setFrame:CGRectMake(self.tableView.frame.origin.x, self.tableView.frame.origin.y, 290, self.tableView.frame.size.height)];
+         //[self.searchBar setFrame:CGRectMake(self.searchBar.frame.origin.x, self.searchBar.frame.origin.y, 280, self.searchBar.frame.size.height)];
     }
-    CGRect frame = self.tableView.frame;
-    frame.size.height = self.view.frame.size.height;
-    self.tableView.frame = frame;
+    
+    CGRect frame = self.tableView.frame; frame.size.height = self.view.frame.size.height; self.tableView.frame = frame;
+    
+    
+    
+    if(self.local){
+        
+        __weak DkTDocketTableViewController *weakSelf = self;
+        
+        BOOL reverse = [[[DkTSettings sharedSettings] valueForKey:DkTSettingsMostRecentKey] boolValue];
+        
+        [self.tableView addPullToRefreshWithActionHandler:^{
+            
+            if([weakSelf connectivityStatus]) {
+                
+                PACERClient *client = [PACERClient sharedClient];
+                [client retrieveDocket:weakSelf.docket sender:weakSelf to:[client pacerDateString:[NSDate date]] from:weakSelf.docket.updated];
+                weakSelf.lastUpdated.text = @"Updating...";
+            }
+            
+            else [weakSelf.tableView.pullToRefreshView stopAnimating];
+            
+            
+        } position:reverse ? SVPullToRefreshPositionTop : SVPullToRefreshPositionBottom];
+        
+        self.tableView.pullToRefreshView.textColor = [UIColor activeColor];
+        self.tableView.pullToRefreshView.arrowColor = [UIColor activeColor];
+        self.tableView.pullToRefreshView.activityIndicatorViewColor = [UIColor activeColor];
+        
+        [self.tableView.pullToRefreshView setTitle:@"Pull to refresh docket." forState:SVPullToRefreshStateStopped];
+        [self.tableView.pullToRefreshView setSubtitle:@"PACER account will be charged." forState:SVPullToRefreshStateStopped];
+        [self.tableView.pullToRefreshView setTitle:@"Refreshing docket..." forState:SVPullToRefreshStateLoading];
+        [self.tableView.pullToRefreshView setSubtitle:@"PACER account will be charged." forState:SVPullToRefreshStateLoading];
+    }
 }
 
 -(UILabel *) titleLabel
@@ -127,23 +153,17 @@ typedef enum {
         label.text = [label.text stringByAppendingString:@"    "];
         if(!self.isLocal) label.text = [label.text stringByAppendingString:@"    "];
     }
-    
-    
     [label sizeToFit];
+    
     return label;
 }
 
 -(void) viewWillDisappear:(BOOL)animated
 {
-    //[[RECAPClient sharedClient] cancelAllHTTPOperationsWithMethod:@"POST" path:@"query/"];
+    //[[SecondaryClient sharedClient] cancelAllHTTPOperationsWithMethod:@"POST" path:@"query/"];
     [[DkTDownloadManager sharedManager] setDelegate:nil];
     [[UIMenuController sharedMenuController] setMenuItems:nil];
     
-}
-- (void)didReceiveMemoryWarning
-{
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
 }
 
 -(void) bookmarkDocket
@@ -157,6 +177,8 @@ typedef enum {
     
     [[DkTBookmarkManager sharedManager] bookmarkDocket:self.docket withDocketEntries:entries];
 }
+
+-(BOOL) canBecomeFirstResponder { return YES; }
 
 #pragma mark = Batch Downloading
 
@@ -291,7 +313,7 @@ typedef enum {
     else cell = [tableView dequeueReusableCellWithIdentifier:PlainCellIdentifier];
 
     if(cell == nil) {
-        
+    
         if(e.entryNumber.integerValue != 0) cell = [[DkTNumberedCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"NumberedCell"];
         else cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"PlainCell"];
         cell.textLabel.font = [UIFont fontWithName:kLightFont size:11];
@@ -315,10 +337,10 @@ typedef enum {
         DkTNumberedCell *nCell = (DkTNumberedCell *)cell;
         if(!self.isRoot && [e isKindOfClass:[DKTAttachment class]])
         {
-            nCell.numberLabel.text = [NSString stringWithFormat:@"%@.%@", e.entryNumber.stringValue, ((DKTAttachment *)e).attachment.stringValue];
+            [nCell setNumber:[NSString stringWithFormat:@"%@.%@", e.entryNumber, ((DKTAttachment *)e).attachment]];
 
         }
-        else nCell.numberLabel.text = [NSString stringWithFormat:@"%@", e.entryNumber.stringValue];
+        else [nCell setNumber:[NSString stringWithFormat:@"%@", e.entryNumber]];
         
         nCell.textLabel.textColor = hasLink ? [UIColor activeColor] : [UIColor redColor];
     }
@@ -363,7 +385,7 @@ typedef enum {
                 [e.urls removeObjectForKey:LocalURLKey];
             }
             
-            //if ([[e.urls objectForKey:DkTURLKey] length] > 0) cell.accessoryView = [weakSelf RECAPLabel];
+            //if ([[e.urls objectForKey:DkTURLKey] length] > 0) cell.accessoryView = [weakSelf SecondaryClientLabel];
             
         }];
         
@@ -386,14 +408,8 @@ typedef enum {
     return [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
 }
 
--(UIPinchGestureRecognizer *) pinch
-{
-    return [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(handlePinch:)];
-}
-
 -(void) lookupEntry:(DkTDocketEntry *)e
 {
-    
     
     __weak DkTDocketTableViewController *weakSelf = self;
     
@@ -423,11 +439,11 @@ typedef enum {
         
         /*else
         {
-            [[RECAPClient sharedClient] isDocketEntryRECAPPED:_entry completion:^(id entry, id json) {
+            [[SecondaryClientClient sharedClient] isDocketEntryAvailableOnSecondaryClient:_entry completion:^(id entry, id json) {
                 
-                //[weakSelf addRecapToEntry:entry json:json];
+                //[weakSelf addSecondaryClientToEntry:entry json:json];
                 
-               _entry.lookupStatus = _entry.lookupStatus | DktEntryStatusRECAP;
+               _entry.lookupStatus = _entry.lookupStatus | DktEntryStatusSecondaryClient;
                 
                 
             }];
@@ -460,13 +476,12 @@ typedef enum {
     
     if(entry.entryNumber.integerValue == 0) return;
     
+    self.activeEntry = entry;
+    
     NSString *path;
     
-    if( (path = [entry.urls objectForKey:LocalURLKey]) )
-    {
-        [self didDownloadDocketEntry:entry atPath:path cost:NO];
-    }
-    
+    if( (path = [entry.urls objectForKey:LocalURLKey]) ) [self didDownloadDocketEntry:entry atPath:path cost:NO];
+ 
     /*
     else if ( (path = [entry.urls objectForKey:DkTURLKey]) )
     {
@@ -486,6 +501,7 @@ typedef enum {
             if(entry.link == nil) return;
             
             [[PACERClient sharedClient] retrieveDocument:entry sender:self docket:self.docket];
+            
         }
        
     }
@@ -504,14 +520,14 @@ typedef enum {
     
     __weak DkTDocketTableViewController *weakSelf = self;
     
-    PSMenuItem *recap = [[PSMenuItem alloc] initWithTitle:@"RECAP" block:^{
+    PSMenuItem *secondary = [[PSMenuItem alloc] initWithTitle:@"[secondary client]" block:^{
         
         if([[PACERClient sharedClient] checkNetworkStatusWithAlert:YES])
         {
             UITableViewCell *cell = [weakSelf.tableView cellForRowAtIndexPath:indexPath];
             MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:cell.contentView animated:YES];
             hud.color = [UIColor clearColor];
-            [[RECAPClient sharedClient] getDocument:entry sender:weakSelf];
+            [[SecondaryClient sharedClient] getDocument:entry sender:weakSelf];
         }
         
         
@@ -529,16 +545,23 @@ typedef enum {
     }];
     
     [pacer cxa_setFont:[UIFont fontWithName:kSecondaryFont size:9] forTitle:pacer.title];
-    [recap cxa_setFont:[UIFont fontWithName:kSecondaryFont size:9] forTitle:recap.title];
+    [secondary cxa_setFont:[UIFont fontWithName:kSecondaryFont size:9] forTitle:secondary.title];
     
-    [menu setMenuItems:@[recap, pacer]];
+    [menu setMenuItems:@[secondary, pacer]];
     CGRect rect = [self.tableView rectForRowAtIndexPath:indexPath];
     [menu setTargetRect:rect inView:self.tableView];
     [menu setMenuVisible:YES];
 }*/
 
 
-#pragma mark - PACER/RECAP/DktDownloadManager Protocol
+#pragma mark - PACER/SecondaryClient/DktDownloadManager Protocol
+-(void) handleFailedConnection {
+    
+    self.lastUpdated.text =  [NSString stringWithFormat:@"Updated %@", self.docket.updated];
+    [self.tableView.pullToRefreshView stopAnimating];
+    
+}
+
 -(void) didDownloadDocketEntry:(DkTDocketEntry *)entry atPath:(NSString *)path
 {
     [self didDownloadDocketEntry:entry atPath:path cost:YES];
@@ -554,54 +577,64 @@ typedef enum {
     //path: local path of the file
     //entry: a docket entry object corresponding to the docket entry
     
-    ReaderDocument *readerDocument = [[ReaderDocument alloc] initWithFilePath:path password:nil];
-    
-    if(readerDocument == nil)
+    if(self.activeEntry == entry)
     {
-        DkTAlertView *alert = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error loading document."];
+        ReaderDocument *readerDocument = [[ReaderDocument alloc] initWithFilePath:path password:nil];
         
-        [alert addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-            
-            [alertView dismissAnimated:YES];
-        }];
-        
-        [alert show];
-        
-        return;
-    }
-    
-    ReaderViewController *pdfReader = [[ReaderViewController alloc] initWithReaderDocument:readerDocument];
-    
-    //PACER Opinions are free.
-    //If the first word of the entry is not equal to OPINION, then we must add its cost;
-    /*
-    if(paid)
-    {
-        if(![[[entry.summary componentsSeparatedByString:@" "] objectAtIndex:0] isEqualToString:@"OPINION"])
+        if(readerDocument == nil)
         {
-            dispatch_async(dispatch_queue_create("cost.queue", NULL), ^{
-                [DkTSession addCostForPages:readerDocument.pageCount.intValue];
-            });
+            DkTAlertView *alert = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error loading document."];
+            
+            [alert addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                
+                [alertView dismissAnimated:YES];
+            }];
+            
+            [alert show];
+            
+            return;
         }
-    }*/
-    
-    
-    pdfReader.view.frame = self.detailViewController.view.frame;
-    for(UIViewController *vc in self.detailViewController.childViewControllers)
-    {
-        [vc removeFromParentViewController];
-        [vc.view removeFromSuperview];
+        
+        ReaderViewController *pdfReader = [[ReaderViewController alloc] initWithReaderDocument:readerDocument];
+        
+        //PACER Opinions are free.
+        //If the first word of the entry is not equal to OPINION, then we must add its cost;
+        /*
+         if(paid)
+         {
+         if(![[[entry.summary componentsSeparatedByString:@" "] objectAtIndex:0] isEqualToString:@"OPINION"])
+         {
+         dispatch_async(dispatch_queue_create("cost.queue", NULL), ^{
+         [DkTSession addCostForPages:readerDocument.pageCount.intValue];
+         });
+         }
+         }*/
+        
+        
+        pdfReader.view.frame = self.detailViewController.view.frame;
+        for(UIViewController *vc in self.detailViewController.childViewControllers)
+        {
+            [vc removeFromParentViewController];
+            [vc.view removeFromSuperview];
+        }
+        
+        self.detailViewController.title = [NSString stringWithFormat:@"Entry #%d", entry.entryNumber.intValue];
+        [self.detailViewController addChildViewController:pdfReader];
+        [self.detailViewController.view addSubview:pdfReader.view];
+        [self.detailViewController setDocketEntry:entry];
+        [self.detailViewController setFilePath:path];
+        
+        if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
+        {
+            PKRevealController *revealController = self.parentViewController.revealController;
+            [revealController showViewController:revealController.frontViewController animated:YES completion:^(BOOL finished) {
+            
+                [revealController.revealResetTapGestureRecognizer requireGestureRecognizerToFail:pdfReader.singleTap];
+            
+            }];
+        }
     }
     
-    self.detailViewController.title = [NSString stringWithFormat:@"Entry #%d", entry.entryNumber.intValue];
-    [self.detailViewController addChildViewController:pdfReader];
-    [self.detailViewController.view addSubview:pdfReader.view];
-    [self.detailViewController setDocketEntry:entry];
-    [self.detailViewController setFilePath:path];
-    
-    if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) [self.parentViewController.revealController showViewController:self.parentViewController.revealController.frontViewController animated:YES completion:^(BOOL finished) {
-        
-    }];
     
     
 }
@@ -672,11 +705,19 @@ typedef enum {
     }];
 }
 
-
--(BOOL) canBecomeFirstResponder
+-(void) handleDocket:(DkTDocket *)docket entries:(NSArray *)entries to:(NSString *)to from:(NSString *)from
 {
-    return YES;
+    DkTBookmarkManager *manager = [DkTBookmarkManager sharedManager];
+    [manager appendEntries:entries toSavedDocket:docket];
+    self.docketEntries = [manager savedDocket:docket];
+    BOOL reverse = [[[DkTSettings sharedSettings] valueForKey:DkTSettingsMostRecentKey] boolValue];
+    if(reverse) self.docketEntries = [[self.docketEntries reverseObjectEnumerator] allObjects];
+    [self filterContentForSearch:self.searchBar.text];
+    self.lastUpdated.text =  [NSString stringWithFormat:@"Updated %@", self.docket.updated];
+    [self.tableView.pullToRefreshView stopAnimating];
+    [self.tableView reloadData];
 }
+
 
 -(BOOL) canPerformAction:(SEL)action withSender:(id)sender
 {
@@ -693,9 +734,9 @@ typedef enum {
     if( ([entry.urls objectForKey:DkTURLKey] == nil) && ([entry.urls objectForKey:DkTURLKey] == nil))
     {
         /*
-        [[RECAPClient sharedClient] isDocketEntryRECAPPED:entry completion:^(id e, id json) {
+        [[SecondaryClient sharedClient] isDocketEntryAvailableOnSecondaryClient:entry completion:^(id e, id json) {
             
-            [self addRecapToEntry:e json:json];
+            [self addSecondaryClientToEntry:e json:json];
             
         }];*/
     }
@@ -703,7 +744,7 @@ typedef enum {
 
 /*
 
--(void) addRecapToEntry:(DkTDocketEntry *)entry json:(NSDictionary *)json
+-(void) addSecondaryClientToEntry:(DkTDocketEntry *)entry json:(NSDictionary *)json
 {
     NSDictionary *filenameDict = [[json allValues] lastObject];
     
@@ -750,18 +791,19 @@ typedef enum {
     doubleSwipeDown.direction = UISwipeGestureRecognizerDirectionDown;
     doubleSwipeDown.delegate = self;
     [self.tableView addGestureRecognizer:doubleSwipeDown];
+    
     self.direction = UISwipeGestureRecognizerDirectionLeft | UISwipeGestureRecognizerDirectionRight;
     
     UIView *backgroundView = [[UIView alloc] init];
     backgroundView.backgroundColor = [UIColor clearColor];
     [self.tableView setBackgroundView:backgroundView];
     
-    [PSMenuItem installMenuHandlerForObject:self.view];
+    //[PSMenuItem installMenuHandlerForObject:self.view];
     
     self.searchBar = [[UISearchBar alloc] initWithFrame:CGRectMake(0, 0, PAD_OR_POD(self.tableView.frame.size.width, 290), 50)];
     self.searchBar.placeholder = @"Search Docket";
     self.searchBar.delegate = self;
-    self.searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    //self.searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
 
     if([[[[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."] objectAtIndex:0] intValue] != 7)
     {
@@ -770,16 +812,14 @@ typedef enum {
     }
     
     self.tableView.tableHeaderView = self.searchBar;
-    [self.tableView setBackgroundView:backgroundView];
-    
-    
+    self.tableView.contentOffset = CGPointMake(0, self.searchBar.frame.size.height);
 }
 
 
--(UILabel *) RECAPLabel
+-(UILabel *) SecondaryClientLabel
 {
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 120, self.tableView.rowHeight)];
-    label.text = [NSString stringWithFormat:@"R"];
+    label.text = [NSString stringWithFormat:@""];
     label.font = [UIFont fontWithName:kContrastFont size:14];
     label.textColor = [UIColor activeColor];
     [label sizeToFit];
@@ -796,7 +836,6 @@ typedef enum {
 
 -(UIImageView *) savedImage
 {
-
     UIImage *img = [[DkTImageCache sharedCache] imageNamed:@"save" color:[UIColor activeColor]];
     UIImageView *imgView = [[UIImageView alloc] initWithImage:img];
     imgView.frame = CGRectMake(0, 0, 20, 20);
@@ -882,27 +921,21 @@ typedef enum {
 
 }
 
--(DkTLoginViewController *)lvc
+-(void) dismissLVC:(id)sender
 {
     
-    DkTLoginViewController *lvc = [[DkTLoginViewController alloc] init];
-        
-    CGRect frame = self.view.frame;
-    frame.size.height = 280; frame.size.width *= .75; lvc.view.frame = frame;
-    lvc.view.autoresizingMask = UIViewAutoresizingNone;
-    lvc.view.layer.cornerRadius = 5.0;
+    UIViewController *dvc = [UIApplication sharedApplication].keyWindow.rootViewController.presentedViewController;
+    [dvc dismissViewControllerAnimated:YES completion:nil];
+    [dvc.view.window removeGestureRecognizer:sender];
     
-    lvc.view.layer.shadowRadius = 8.;
-    lvc.view.opaque = YES;
-    lvc.modal = YES;
-    
-    return lvc;
 }
+
 
 -(void) viewDidDisappear:(BOOL)animated
 {
     self.batchDownload = nil;
 }
+
 #pragma mark search methods
 -(void) filterContentForSearch:(NSString *)text
 {
@@ -924,48 +957,9 @@ typedef enum {
     self.expandedCell.textLabel.numberOfLines = 4;
     self.expandedCell = nil;
     [self.tableView reloadData];
-    
-    
+   
 }
 
--(void) scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset
-{
-    
-    if(self.direction == UISwipeGestureRecognizerDirectionUp)  [self.tableView setContentOffset:CGPointMake(0, self.tableView.contentSize.height) animated:NO];
-    
-    else if (self.direction == UISwipeGestureRecognizerDirectionDown) [self.tableView setContentOffset:CGPointMake(0, self.searchBar.frame.size.height) animated:NO];
-    
-}
-
--(void) scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
-{
-    
-    if(self.direction == UISwipeGestureRecognizerDirectionUp || self.direction == UISwipeGestureRecognizerDirectionDown)
-    self.direction = UISwipeGestureRecognizerDirectionLeft | UISwipeGestureRecognizerDirectionRight;
-}
--(void) handleDoubleSwipeUp:(UISwipeGestureRecognizer *)sender
-{
-    self.direction = UISwipeGestureRecognizerDirectionUp;
-}
-
--(void) handleDoubleSwipeDown:(UISwipeGestureRecognizer *)sender
-{
-    self.direction = UISwipeGestureRecognizerDirectionDown;
-}
-
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
-{
-    return YES;
-}
-
--(void) dismissLVC:(id)sender
-{
-    
-    UIViewController *dvc = [UIApplication sharedApplication].keyWindow.rootViewController.presentedViewController;
-    [dvc dismissViewControllerAnimated:YES completion:nil];
-    [dvc.view.window removeGestureRecognizer:sender];
-    
-}
 
 #pragma mark User Interface
 
@@ -1004,17 +998,11 @@ typedef enum {
         [bookmarkButton addTarget:self action:@selector(bookmarkDocket) forControlEvents:UIControlEventTouchUpInside];
         UIBarButtonItem *bookmarkBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:bookmarkButton];
         bookmarkButton.helpText = @"Bookmark the docket.";
-        self.navigationItem.rightBarButtonItems = @[space, self.downloadDocketBarButtonItem, bookmarkBarButtonItem];
+        self.navigationItem.rightBarButtonItems = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? @[self.downloadDocketBarButtonItem, bookmarkBarButtonItem] : @[space, self.downloadDocketBarButtonItem, bookmarkBarButtonItem];
     }
     
-    else
-    {
-        if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) self.navigationItem.rightBarButtonItem = self.downloadDocketBarButtonItem;
-        
-        else self.navigationItem.rightBarButtonItems = @[space, self.downloadDocketBarButtonItem];
-    }
-    
-    
+    else self.navigationItem.rightBarButtonItems =  (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? @[self.downloadDocketBarButtonItem] : @[space, self.downloadDocketBarButtonItem];
+  
     if(self.isRoot) self.title = @"Docket";
     
     
@@ -1048,19 +1036,20 @@ typedef enum {
 {
     if(_docketInfoView == nil)
     {
-        _docketInfoView = [[UIView alloc] initWithFrame:(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? self.navigationController.toolbar.bounds : CGRectMake(0, 0, self.contentSizeForViewInPopover.width, self.navigationController.toolbar.bounds.size.height)];
-        
+      //  _docketInfoView = [[UIView alloc] initWithFrame:(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? self.navigationController.toolbar.bounds : CGRectMake(0, 0, self.contentSizeForViewInPopover.width, self.navigationController.toolbar.bounds.size.height)];
+        _docketInfoView = [[UIView alloc] initWithFrame:(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) ? self.navigationController.toolbar.bounds : CGRectMake(0, 0, self.contentSizeForViewInPopover.width, self.navigationController.toolbar.bounds.size.height)];
+        //_docketInfoView.autoresizingMask = UIViewAutoresizingFlexibleRightMargin;
         CGFloat compensator = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? 0 : 20;
         
-        if(self.docket.updated.length > 0)
+        if(self.docket.updated.length > 0 && self.local)
         {
-            UILabel *lastUpdated = [[UILabel alloc] initWithFrame:CGRectMake(0, 15, _docketInfoView.frame.size.width-compensator, 13)];
-            lastUpdated.backgroundColor = [UIColor clearColor];
-            lastUpdated.font = [UIFont fontWithName:kMainFont size:10];
-            lastUpdated.textColor = [UIColor inactiveColor];
-            lastUpdated.textAlignment = NSTextAlignmentCenter;
-            lastUpdated.text =  [NSString stringWithFormat:@"Last checked %@", self.docket.updated];
-            [_docketInfoView addSubview:lastUpdated];
+            self.lastUpdated = [[UILabel alloc] initWithFrame:CGRectMake(0, 15, _docketInfoView.frame.size.width-compensator, 13)];
+            self.lastUpdated.backgroundColor = [UIColor clearColor];
+            self.lastUpdated.font = [UIFont fontWithName:kMainFont size:10];
+            self.lastUpdated.textColor = [UIColor inactiveColor];
+            self.lastUpdated.textAlignment = NSTextAlignmentCenter;
+            self.lastUpdated.text =  [NSString stringWithFormat:@"Updated %@", self.docket.updated];
+            [_docketInfoView addSubview:self.lastUpdated];
         }
         
     }
@@ -1132,6 +1121,56 @@ typedef enum {
     
 }
 
+-(DkTLoginViewController *)lvc
+{
+    
+    DkTLoginViewController *lvc = [[DkTLoginViewController alloc] init];
+    
+    CGRect frame = self.view.frame;
+    frame.size.height = 270; frame.size.width *= .75; lvc.view.frame = frame;
+    lvc.view.autoresizingMask = UIViewAutoresizingNone;
+    lvc.view.layer.cornerRadius = 5.0;
+    lvc.view.center = self.view.center;
+    lvc.view.layer.shadowRadius = 8.;
+    lvc.view.opaque = YES;
+    lvc.modal = YES;
+    
+    return lvc;
+}
+
+#pragma mark - Gesture Handling
+
+
+-(void) scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset
+{
+    
+    if(self.direction == UISwipeGestureRecognizerDirectionUp)  [self.tableView setContentOffset:CGPointMake(0, self.tableView.contentSize.height) animated:NO];
+    
+    else if (self.direction == UISwipeGestureRecognizerDirectionDown) [self.tableView setContentOffset:CGPointMake(0, self.searchBar.frame.size.height) animated:NO];
+    
+}
+
+-(void) scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
+{
+    
+    if(self.direction == UISwipeGestureRecognizerDirectionUp || self.direction == UISwipeGestureRecognizerDirectionDown)
+        self.direction = UISwipeGestureRecognizerDirectionLeft | UISwipeGestureRecognizerDirectionRight;
+}
+-(void) handleDoubleSwipeUp:(UISwipeGestureRecognizer *)sender
+{
+    self.direction = UISwipeGestureRecognizerDirectionUp;
+}
+
+-(void) handleDoubleSwipeDown:(UISwipeGestureRecognizer *)sender
+{
+    self.direction = UISwipeGestureRecognizerDirectionDown;
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
+{
+    return YES;
+}
+
 -(void) handleLongPress:(UIGestureRecognizer *)sender
 {
     if(sender.state == UIGestureRecognizerStateBegan)
@@ -1183,43 +1222,5 @@ typedef enum {
     return cellHeight + (size.height - textHeight);
 }
 
--(void) handlePinch:(UIPinchGestureRecognizer *)pinch
-{
-    if(pinch.state == UIGestureRecognizerStateBegan)
-    {
-        UIView *view = [pinch view];
-        UIView *superview = [view superview];
-        
-        while (![superview isKindOfClass:[UITableViewCell class]]) {
-            superview = [superview superview];
-        };
-        
-        
-        UITableViewCell *cell = (UITableViewCell *)superview;
-        NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
-        
-        
-        if( (pinch.scale > 1) && (self.expandedCell != cell))
-        {
-            self.expandedCell = cell;
-            self.expandedRow = indexPath.row;
-            self.expandedHeight = [self calculateExpandedHeight:self.expandedCell];
-            self.expandedCell.textLabel.numberOfLines = 0;
-            [self.expandedCell setNeedsDisplay];
 
-        }
-        
-        else if( (pinch.scale < 1) && (self.expandedCell == cell) )
-        {
-            self.expandedCell.textLabel.numberOfLines = 4;
-            [self.expandedCell setNeedsDisplay];
-            self.expandedCell = nil;
-            self.expandedRow = -1;
-        }
-        
-        
-        [self.tableView beginUpdates];
-        [self.tableView endUpdates];
-    }
-}
 @end

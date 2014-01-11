@@ -1,6 +1,4 @@
- //
-//  RECAPSearchViewController.m
-//  RECAPp
+
 //
 //  Created by Matthew Zorn on 5/19/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -18,7 +16,6 @@
 #import "FSPopoverTableViewController.h"
 #import "FSButton.h"
 
-#import "RECAPClient.h"
 #import "PACERClient.h"
 
 #import "MBProgressHUD.h"
@@ -38,6 +35,7 @@ NSString* const DateFiledStartKey = @"date_filed_start";
 NSString* const DateTermKey = @"date_term_end";
 NSString* const CaseNumberKey = @"case_no";
 NSString* const PartyKey = @"party";
+
 
 @interface DkTSearchViewController ()
 {
@@ -121,7 +119,7 @@ NSString* const PartyKey = @"party";
         _tableView = [[DkTSearchTableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
      
         _tableView.rowHeight = PAD_OR_POD(65, 52);
-        
+        IOS7(_tableView.separatorInset = UIEdgeInsetsZero;, );
         CGRect frame;
         frame.size.height = PAD_OR_POD(_tableView.rowHeight * self.labels.count, MIN(_tableView.rowHeight * self.labels.count, self.view.frame.size.height * .65));
         frame.size.width = self.view.frame.size.width*.85;

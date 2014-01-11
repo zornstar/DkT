@@ -1,6 +1,6 @@
 //
 //  ZipWriteStream.h
-//  Objective-Zip v. 0.8.3
+//  Objective-Zip v. 0.7.2
 //
 //  Created by Gianluca Bertani on 25/12/09.
 //  Copyright 2009-10 Flying Dolphin Studio. All rights reserved.
@@ -32,7 +32,6 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "ARCHelper.h"
 
 #include "zip.h"
 
@@ -46,6 +45,7 @@
 
 - (id) initWithZipFileStruct:(zipFile)zipFile fileNameInZip:(NSString *)fileNameInZip;
 
+- (void) writeBytes:(const void *)bytes length:(unsigned int)length;
 - (void) writeData:(NSData *)data;
 - (void) finishedWriting;
 
