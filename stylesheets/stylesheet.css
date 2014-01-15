@@ -281,6 +281,7 @@ Full-Width Styles
 #header_wrap {
   background: #6A879C;
   position: fixed;
+  height: 50px;
 }
 
 #header_wrap .inner {
@@ -348,7 +349,7 @@ Full-Width Styles
 }
 
 #main_content {
-  padding-top: 40px;
+  padding-top: 50px;
 }
 
 #footer_wrap {
