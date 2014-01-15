@@ -340,6 +340,12 @@ Full-Width Styles
   background: url(../images/sprite_download.png) no-repeat top left;
 }
 
+.logo {
+  width:8%;
+  height:8%;
+  margin-top:10px;
+  margin-bottom:10px;
+}
 .tar_download_link:hover {
   background: url(../images/sprite_download.png) no-repeat top right;
 }
@@ -353,7 +359,7 @@ Full-Width Styles
 
 #main_content {
   width:940px;
-  margin-top: 400px
+  margin-top: 120px
 }
 
 #footer_wrap {
