@@ -282,6 +282,7 @@ Full-Width Styles
   background: #6A879C;
   position: fixed;
   width:100%;
+  height:150px;
   z-index:9999;
 }
 
