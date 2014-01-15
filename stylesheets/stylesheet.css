@@ -281,6 +281,7 @@ Full-Width Styles
 #header_wrap {
   background: #6A879C;
   position: fixed;
+  z-index:9999;
 }
 
 #header_wrap .inner {
