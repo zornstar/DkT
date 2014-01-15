@@ -348,13 +348,11 @@ Full-Width Styles
   background: #f2f2f2;
   border-top: 1px solid #111;
   border-bottom: 1px solid #111;
-  margin: 100px auto;
 }
 
 #main_content {
   margin:0 auto; 
   overflow: auto; 
-  padding:80px 0; 
 }
 
 #footer_wrap {
