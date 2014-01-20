@@ -9,7 +9,7 @@ by Jason Costello, @jsncostello
 MeyerWeb Reset
 *******************************************************************************/
 
-html, body, div, span, applet, object, iframe,i
+html, body, div, span, applet, object, iframe,
 h1, h2, h3, h4, h5, h6, p, blockquote, pre,
 a, abbr, acronym, address, big, cite, code,
 del, dfn, em, img, ins, kbd, q, s, samp,
@@ -61,7 +61,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
   margin: 10px 0;
   font-weight: 700;
-  color:#000;
+  color:#EBEBEB;
   font-family: 'Lucida Grande', 'Calibri', Helvetica, Arial, sans-serif;
   letter-spacing: -1px;
 }
@@ -139,7 +139,13 @@ img {
   max-width: 739px;
   padding: 5px;
   margin: 10px 0 10px 0;
-  border: none;
+  border: 1px solid #ebebeb;
+
+  box-shadow: 0 0 5px #ebebeb;
+  -webkit-box-shadow: 0 0 5px #ebebeb;
+  -moz-box-shadow: 0 0 5px #ebebeb;
+  -o-box-shadow: 0 0 5px #ebebeb;
+  -ms-box-shadow: 0 0 5px #ebebeb;
 }
 
 p img {
@@ -258,8 +264,8 @@ Full-Width Styles
 
 .inner {
   position: relative;
-  width: 720 px;
-  padding: 25px 40px;
+  max-width: 640px;
+  padding: 20px 10px;
   margin: 0 auto;
 }
 
@@ -280,15 +286,10 @@ Full-Width Styles
 
 #header_wrap {
   background: #6A879C;
-  position: fixed;
-  width:100%;
-  height:150px;
-  z-index:9999;
 }
 
 #header_wrap .inner {
-  padding: 30px 10px 30px 10px;
-  margin: 0px auto;
+  padding: 50px 10px 30px 10px;
 }
 
 #project_title {
@@ -340,26 +341,18 @@ Full-Width Styles
   background: url(../images/sprite_download.png) no-repeat top left;
 }
 
-.logo {
-  width:8%;
-  height:8%;
-  margin-top:10px;
-  margin-bottom:10px;
-}
 .tar_download_link:hover {
   background: url(../images/sprite_download.png) no-repeat top right;
 }
 
 #main_content_wrap {
-  z-index:-1;
   background: #f2f2f2;
   border-top: 1px solid #111;
   border-bottom: 1px solid #111;
 }
 
 #main_content {
-  width:940px;
-  margin-top: 120px
+  padding-top: 40px;
 }
 
 #footer_wrap {

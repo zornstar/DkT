@@ -1,89 +1,352 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta name="apple-itunes-app" content="app-id=myAppStoreID, affiliate-data=myAffiliateData, app-argument=myURL">
+<link rel="stylesheet" type="text/css" href="jquery.fullPage.css" />
+<link rel="stylesheet" type="text/css" href="stylesheets/example.css" />
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"> </script>
+<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js">
+</script>
 
-  <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="DkT : DkT" />
+<script src="http://vast-eng.github.io/jquery-popup-overlay/jquery.popupoverlay.js"></script>
+<script type="text/javascript" src="vendors/jquery.slimscroll.min.js"></script>
+<script type="text/javascript" src="jquery.fullPage.js"></script>
+<link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>DkT</title>
+</head>
 
-    <title>DkT</title>
-  </head>
 
-  <body>
+<script type="text/javascript">
+		$(document).ready(function() {
+			
+		 
+			$.fn.fullpage({
+				anchors: ['1', '2'],
+				slidesColor: ['#f2f2f2', '#f2f2f2'],
+				verticalCentered: true,
+				loopBottom:true,
+				loopHorizontal:false,
+				paddingTop:10,
+				controlArrowColor: '#000',
+				menu:'#menu',
+				onLeave: function(index, direction) {
+					
+					if(index == 1) {
+						$("#menu").show();
+						$("#downArrow").remove();		
+						$('#menu').removeClass('hidden');
+						$(this).find('[data-menuanchor="login"]').addClass('active');
+						
+					}
+					
+					else if(index == 2 && direction == 'up') {
+						$("#menu").hide();
+					}
+				
+				},
+				
+				afterLoad: function(anchorLink, index){
+            		//using index
+            		if(index == 1){
+               		 	$("#menu").hide();
+            		}
+           			 //using anchorLink
+           
+       			 },
+				
+				afterSlideLoad: function( anchorLink, index, slideIndex, direction){
+            //leaving the first slide of the 2nd Section to the right
+				//alert("Leaving slide" + index + ":" + slideIndex);
+					
+					//switch the i
+					var imgId = "#img_phone";
+					var path = "images/img_phone_" + slideIndex + ".png";
+					
+					$(imgId).attr("src", path);
+					
+					$(this).find('#menu.active').removeClass('active');
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/zornstar/DkT">View on GitHub</a>
+					var name;
+					
+					if(slideIndex < 3)  name = "login";
+					else if(slideIndex < 5) name = "search";
+					else if(slideIndex < 10) name = "dockets";
+					else if (slideIndex<13) name = "bookmarks";
+					else if (slideIndex < 17) name = "documents";
+					else name = "settings";
+					
+					$.fn.fullpage.activateMenu(name);
+				
+				}
+			});
+			
+			$("#about").click(function(e){
+    			e.preventDefault();
+   				$(this).find(".popup").fadeIn("fast");
+		 	});
+			
+			$("#howto").click(function(e){
+    			e.preventDefault();
+   				$.fn.fullpage.moveSectionDown();
+		 	});
+			
+			$("#popup").click(function(e){
+    			e.preventDefault();
+   				$(this).find(".popup").fadeOut("fast");
+		 	});
+			
+			$('#home_button').click(function(e) { 
+				var i = $(this).attr("id");
+				if(i == -1) $.fn.fullpage.moveTo(1);
+				else $.fn.fullpage.moveTo(2,$(this).attr("id"));
+   			 });
+			 
+			 $.fn.fullpage.activateMenu('login');
+			 
+			 $('#popup').popup();
+			
+		});
+</script>
+<script type="text/javascript">
 
-          <img src="images/Logo.png" class="logo" />
+		  
+</script>
+   
+<body>
 
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/zornstar/DkT/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/zornstar/DkT/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
-    <div></div>
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <h3>
-<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Introducing DkT</h3>
-
-<p>DkT is an open-source client for PACER/ECF for iOS.  DkT overlays PACER with a custom user interface, mediates network requests with the PACER/ECF,
-and parses results to facilitate access to federal dockets on iOS devices.  DkT works with the District, Bankruptcy, and Appellate courts, and also adds a number of convenient features to PACER such as bookmarking, saving, batch downloading, and more.</p> 
-
-[will push source code when app approved]
-<h3>
-<a name="donations" class="anchor" href="#donations"><span class="octicon octicon-link"></span></a>Donations</h3>
-<p>DkT is free of charge.</p>
-
-<p></p>If you enjoy using DkT and would like to donate, please consider a small donation to <a href="https://gideonspromise.org/donate/donate-now/">Gideon's Promise</a> or <a href="https://www.chailifeline.org/donate.php">Chai Lifeline</a></p>
-
-<h3>
-<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>License, Authors, and Contributors</h3>
-
-<p>All source code files and compilations thereof are licensed under the terms of the <a href="https://www.mozilla.org/MPL/2.0/">Mozilla Public License 2.0</a>.</p> 
-
-<p></p>This does not include the files and/or libraries by other authors which are available by under the their original licenses including:</p>
-<p><ul>
-<li>AFNetworking</li>
-<li>Objective-Zip</li>
-<li>vfr</li>
-<li>TFHpple</li>
-<li>GDataXML</li>
-<li>SSKeychain</li>
-<li>SVPullToRefresh</li>
-<li>PSMenuItem</li>
-<li>CKCalendarView</li>
-<li>MBProgressHUD</li>
-<li>MBSwitch</li>
-<li>MJPopupBackgroundView</li>
-<li>HMSegmentedControl</li>
-<li>SIAlertView</li>
-<li>TDBadgedCell</li>
-<li>JRSwizzle</li>
-</ul>
-</p>
-<p>Icons are from the free Gemicon set by turqois.</p>
-<h3>
-<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
-
-<p>For questions or contact: <a href="mailto:contact@dktapp.com">contact@dktapp.com</a></p>
-      </section>
-    </div>
-
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">DkT maintained by <a href="https://github.com/zornstar">M.C. Zorn</a></p>
-      </footer>
-    </div>
-
+<ul id="menu" class="hidden">
+	<li data-menuanchor="home"><a href=#1>HOME</a></li>
+	<li data-menuanchor="login" class="active"><a href="#2/1">LOGIN</span></a></li>
+	<li data-menuanchor="search"><a href="#2/4"><span class="toSlide" data-index="4">SEARCH</span></a></li>
+	<li data-menuanchor="dockets"><a href="#2/7"><span class="toSlide" data-index="9">DOCKETS</span></a></li>
+	<li data-menuanchor="bookmarks"><a href="#2/10"><span class="toSlide" data-index="12">BOOKMARKS</span></a></li>
+	<li data-menuanchor="documents"><a href="#2/13"><span class="toSlide" data-index="15">DOCUMENTS</span></a></li>
+	<li data-menuanchor="settings"><a href="#2/16"><span class="toSlide" data-index="18">SETTINGS</span></a></li>
     
+</ul>
 
-  </body>
+<div class="section" id="section0">
+	<div class="home">
+    	<div class="inner">
+    	 	<div class="wrap">
+     			<div class="phoneblock">
+            		<img src="images/iPhone-DkT.png" width="100%" height="100%" />
+           		</div>
+       
+        		<div class="content">
+           			<div class="tab">
+               			<div class="tab-content">
+                  	 	<h3>A New Way to Browse PACER</h3>
+                        <p />
+                   		<p>DkT is a feature-rich, custom PACER/ECF client for iOS.</p>
+                    	<p>Efficiently search dockets, bookmark and update dockets, view and save documents, manage logins, batch downloading, and more.</p>
+                    	<br /><br />
+               	<p align="center"><a href=""><img src="images/badge.png" /></a></p>
+                                	<p align="center"><a href="https://github.com/zornstar/DkT/tree/master"><button class="btn btn-github"><i class="fa fa-github"></i> | Github</button></a></p>
+                         <div id="infoMenu">
+							<ul>
+      							  <li> <a href="#" id="howto">HOW TO</a></li>
+								<li><a href="mailto:contact@dktapp.com">CONTACT</a></li>
+       							 <li> <a href="#" id="about" class="popup_open">ABOUT</a></li>
+                              </ul>
+            			</div>
+                		</div>
+                       
+                    
+	
+</div>
+        		</div>
+    		</div>
+         </div>
+	</div>
+	 
+       
+	</div>
+</div>
+<div class="section" id="section1">
+	
+    <div class="img-container">
+		<img src="images/iPhone-5S-Black.png" id="iPhone"/>
+        <img id="img_phone" src="images/img_phone_0.png" class="screenshot"/>
+    </div>
+ 	
+    <div class="slide" id="slide1">
+		<div class="text">
+        <p>The Home Panel</p>
+        </div>
+	</div>
+	
+    <div class="slide" id="slide2">
+		<div class="text">
+        PACER Username/Login
+        	<div class="subtext">
+                Optionally enter a client/matter
+            </div>
+        </div>
+	</div>
+    
+    <div class="slide" id="slide3">
+    	<div class="text">
+       	Recent Logins
+        </div>
+	</div>
+    
+    <div class="slide" id="slide4">
+    	<div class="text">
+       	Search PACER
+        	<div class="subtext">
+                Press and hold a search field to clear.
+            </div>
+        </div>
+        	
+	</div>
+    
+    <div class="slide" id="slide5">
+    	<div class="text">
+       	Select a Docket
+        	<div class="subtext">
+                (Will incur PACER charges)
+            </div>
+        </div>
+	</div>
+    
+    <div class="slide" id="slide6">
+    	<div class="text">
+       	View a Docket
+        	<div class="subtext">
+       		Use two fingers to scroll to top or bottom. Press and hold a docket entry to expand text.
+        	</div>
+         </div>
+	</div>
+    
+    <div class="slide" id="slide7">
+    	<div class="text">
+       	Filter Docket by Search Terms
+        </div>
+	</div>
+    
+    <div class="slide" id="slide8">
+    	<div class="text">
+       	Batch Download
+        </div>
+	</div>
+    
+    <div class="slide" id="slide9">
+    	<div class="text">
+       	Bookmark a Docket
+        	<div class="subtext">
+       		Bookmarking a docket will save it to the device, allow offline access, and accessing the saved without cost.  Bookmarked dockets can be updated for a minimsl PACER fee.
+        	</div>
+        </div>
+	</div>
+    
+    <div class="slide" id="slide10">
+    	<div class="text">
+       	View Docket Entries
+        	<div class="subtext">
+       		Use the top right icons to e-mail, save documents, and print.
+        	</div>
+        </div>  
+	</div>
+    
+    <div class="slide" id="slide11">
+    	<div class="text">
+       	View Bookmarks
+        	<div class="subtext">
+       		Select the disk to load a saved copy of the docket (no cost). 
+        	</div>
+        </div>
+        
+	</div>
+    <div class="slide" id="slide12">
+    	<div class="text">
+       	Update Bookmarks
+        	<div class="subtext">
+       		Select the calendar to update a bookmark (10 cents per page of updated entries).<br /> Number indicates new docket entries. Check indicates docket is up to date.
+        	</div>
+        </div>
+	</div>
+    <div class="slide" id="slide13">
+    	<div class="text">
+       	Update All Bookmarks
+        	<div class="subtext">
+       		Press and hold the bookmark tab.
+        	</div>
+        </div>
+	</div>
+    
+    <div class="slide" id="slide14">
+    	<div class="text">
+       	Documents
+        	<div class="subtext">
+       		Open previously saved documents at no cost 
+        	</div>
+        </div>
+	</div>
+    <div class="slide" id="slide15">
+    	<div class="text">
+       	Create a Bundle
+        	<div class="subtext">
+       		Press and hold a docket folder and select the pencil.  
+        	</div>
+        </div>
+	</div>
+    <div class="slide" id="slide16">
+    	<div class="text">
+       	E-mail a Zip
+        	<div class="subtext">
+       		Press and hold a docket folder and select the paper clip.  
+        	</div>
+        </div>
+	</div>
+    <div class="slide" id="slide17">
+    	<div class="text">
+       	Open a Document
+        	<div class="subtext">
+       		Select a document to open in DkT. Press and hold to open in another application.  
+        	</div>
+        </div>
+	</div>
+    
+    <div class="slide" id="slide18">
+    	<div class="text">
+       	Automatically Login
+        	<div class="subtext">
+       		Automatically login as the most recent user. 
+        	</div>
+        </div>
+	</div>
+    
+    <div class="slide" id="slide19">
+    	<div class="text">
+       	Table of Contents
+        	<div class="subtext">
+       		Add page numbers and a table of contents in exported docket bundles. 
+        	</div>
+        </div>
+	</div>
+    
+    <div class="slide" id="slide20">
+    	<div class="text">
+       	Reverse Docket Entries
+        	<div class="subtext">
+       		Most recent entries will be listed first. 
+        	</div>
+        </div>
+	</div>
+    
+</div>
+<div id="popup">
+
+	<div class="popup_content">
+	<p>DkT is a custom iOS client for PACER. The application directly interacts with PACER and adding a custom user interface. DkT works with the District, Bankruptcy, and Appellate courts. DkT does not communicate data to any third-party or server, other than PACER.</p>
+    <p> DkT is free, but PACER charges still apply for viewing unsaved dockets and documents. If you enjoy using DkT and would like to donate, please consider a small donation to <a href="https://gideonspromise.org/donate/donate-now/">Gideon's Promise</a> or <a href="https://www.chailifeline.org/donate.php">Chai Lifeline</a>.  DkT is open-source and borrows on the work of many other individuals, as described on the project page.</p>
+    
+    <p style="text-align:center">&#169; 2014</p>
+    
+  </div>
+</div>
+</body>
 </html>
