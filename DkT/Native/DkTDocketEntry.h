@@ -44,6 +44,7 @@ extern NSString * const kWriteableProperties[];
 -(NSString *)urlEncodedParams;
 -(NSAttributedString *) renderSummary;
 -(NSString *)fileName;
+-(NSString *)tempFileName;
 -(NSString *)linkPath;
 -(NSString *)link;
 -(NSString *)entryString;

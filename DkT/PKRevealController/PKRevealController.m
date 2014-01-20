@@ -1500,12 +1500,13 @@ NS_INLINE void safelyExecuteCompletionBlockOnMainThread(PKDefaultCompletionHandl
 
 @end
 
+/*DkT*/
 @implementation PKRevealController (DkT)
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
 {
     
-    if(![otherGestureRecognizer isKindOfClass:[UITapGestureRecognizer class]]) [gestureRecognizer requireGestureRecognizerToFail:otherGestureRecognizer];
+   if(![otherGestureRecognizer isKindOfClass:[UITapGestureRecognizer class]]) [gestureRecognizer requireGestureRecognizerToFail:otherGestureRecognizer];
     return YES;
 }
 

@@ -1,6 +1,4 @@
-//
-//  PACERClient.h
-//  DkTp
+
 //
 //  Created by Matthew Zorn on 5/20/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -12,7 +10,7 @@
 
 
 //TODO
-//completion blocks
+//switch to completion blocks
 
 typedef NS_OPTIONS(NSUInteger, PACERConnectivityStatus) {
     PACERConnected = (1 << 0),

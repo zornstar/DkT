@@ -46,12 +46,12 @@
 /*
 -(SecondaryClient *)secondaryClient
 {
-    if(_recapClient == nil)
+    if(_secondaryClient == nil)
     {
-        _recapClient = [[SecondaryClient alloc] init];
+        _secondaryClient = [[SecondaryClient alloc] init];
     }
     
-    return _recapClient;
+    return _secondaryClient;
 }*/
 
 +(PACERClient *)pacerClient
@@ -83,9 +83,9 @@
         }
         
         /*
-        if([[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] && [download.entry.urls objectForKey:DkTURLKey])
+        if([[DkTSettings sharedSettings] valueForKey:DkTSettingsSecondaryClientEnabledKey] && [download.entry.urls objectForKey:DkTURLKey])
         {
-            [[DkTDownloadManager recapClient] getDocument:d.entry sender:mgr];
+            [[DkTDownloadManager secondaryClient] getDocument:d.entry sender:mgr];
         }*/
         
         //else
@@ -109,9 +109,9 @@
         }
         
         /*
-        if([[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] && [entry.urls objectForKey:DkTURLKey])
+        if([[DkTSettings sharedSettings] valueForKey:DkTSettingsSecondaryClientEnabledKey] && [entry.urls objectForKey:DkTURLKey])
         {
-            [[DkTDownloadManager recapClient] getDocument:entry sender:mgr];
+            [[DkTDownloadManager secondaryClient] getDocument:entry sender:mgr];
         }*/
            
         else [[DkTDownloadManager pacerClient] retrieveDocument:entry sender:mgr docket:docket];

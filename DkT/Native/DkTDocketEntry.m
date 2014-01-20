@@ -175,6 +175,10 @@ NSString * const kWriteableProperties[] = {
     return filename;
 }
 
+-(NSString *)tempFileName {
+    return [NSString stringWithFormat:@"%@&%@&%@", self.docket.court,[self.docket.name substringToIndex:3], self.fileName];
+}
+
 -(NSString *)shortCourt
 {
     NSString *court = self.docket.court;

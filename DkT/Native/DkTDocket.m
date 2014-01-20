@@ -21,8 +21,8 @@ NSString* encodeToPercentEscapeString(NSString *string) {
     return (NSString *)
     CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes(NULL,
                                                               (CFStringRef) string,
-                                                              NULL,
-                                                              (CFStringRef) @"!*'();:@&=+$,/?%#[]",
+                                                              (CFStringRef) @"!*'();@&=+$,?%#[] ",
+                                                              (CFStringRef) @":/",
                                                               kCFStringEncodingUTF8));
 }
 

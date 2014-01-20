@@ -282,6 +282,7 @@ typedef void(^PKDefaultErrorHandler)(NSError *error);
 
 @end
 
+/* DkT */
 @interface PKRevealController (DkT)
 -(void) requireGestureToFailBeforeReveal:(UIGestureRecognizer *)gesture;
 @end

@@ -20,7 +20,6 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
 @property (nonatomic, strong) UIView *contentView;
 @property (nonatomic, strong) UILabel *contentLabel;
 @property (nonatomic, strong) UIImageView *helpImageView;
-@property (nonatomic, strong) ZSArrow *arrow;
 @property (nonatomic, strong) UIFont *font;
 @property (nonatomic) CGPoint point;
 
@@ -136,32 +135,13 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
 +(void) setForClass:(__unsafe_unretained Class)myClass
 {
     [myClass jr_swizzleMethod:@selector(pointInside:withEvent:) withMethod:@selector(zshc_pointInside:withEvent:) error:nil];
-    
-    
-    /*
-     Class aClass = [myClass class];
-    
-    while((aClass = [aClass superclass]))
-    {
-        [myClass jr_swizzleMethod:@selector(touchesBegan:withEvent:) withMethod:@selector(zshc_touchesBegan:withEvent:) error:nil];
-    }*/
 }
 
-+(void) set
-{
-    //[ZSHelpController setForClass:[UIResponder class]];
-    [ZSHelpController setForClass:[UIView class]];
-}
++(void) set { [ZSHelpController setForClass:[UIView class]]; }
 
--(void) setTextColor:(UIColor *)textColor
-{
-    self.contentLabel.textColor = textColor;
-}
+-(void) setTextColor:(UIColor *)textColor { self.contentLabel.textColor = textColor; }
 
--(void) setBackgroundColor:(UIColor *)backgroundColor
-{
-    self.contentView.backgroundColor = backgroundColor;
-}
+-(void) setBackgroundColor:(UIColor *)backgroundColor { self.contentView.backgroundColor = backgroundColor; }
 
 -(void) setIcon:(UIImage *)image
 {
@@ -203,14 +183,12 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
 
 +(BOOL) isVisible
 {
-    BOOL visible = ([[[ZSHelpController sharedHelpController] view] superview] != nil);
-    return visible;
+    return ([[[ZSHelpController sharedHelpController] view] superview] != nil);
 }
 
 -(CGRect) frameInTargetView
 {
     if([ZSHelpController isVisible]) return self.view.frame;
-
     else return CGRectZero;
 }
 
@@ -221,8 +199,8 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
         self.size = DEFAULT_SIZE;
         self.position = ZSCenter;
         self.hit = 0;
+        self.rotation = 0;
     }
-    
     return self;
 }
 
@@ -304,6 +282,7 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
     [self layoutSubviews];
     [self.targetView addSubview:self.view];
     
+    self.view.transform = CGAffineTransformMakeRotation(self.rotation);
     self.view.alpha = 0.;
 
     [UIView animateWithDuration:.1 delay:0 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
@@ -353,6 +332,8 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
             break;
     }
     
+    
+    
     return frame;
 }
 
@@ -396,69 +377,7 @@ NSString *const kZSAttributedHelpTextKey = @"kZSAttributedHelpTextKey";
 
 @end
 
-@interface ZSArrow ()
-
-@property (nonatomic) double direction;
-@property (nonatomic, strong) UIColor *color;
-
-@end
-
-@implementation ZSArrow
-
-- (id)initWithFrame:(CGRect)frame
-{
-    self = [super initWithFrame:frame];
-    if (self) {
-        self.backgroundColor = [UIColor clearColor];
-        self.layer.borderColor = [UIColor clearColor].CGColor;
-    }
-    return self;
-}
 
 
-- (void)drawRect:(CGRect)rect
-{
-    
-    [super drawRect:rect];
-    
-    CGContextRef ctx = UIGraphicsGetCurrentContext();
-    
-    
-    CGPoint points[3] = { CGPointMake(0, self.frame.size.height), CGPointMake(self.frame.size.width/2., 0), CGPointMake(self.frame.size.width, self.frame.size.height) };
-    
-    
-    CGContextBeginPath(ctx);
-    CGContextMoveToPoint(ctx, points[0].x, points[0].y);
-    CGContextAddLineToPoint(ctx, points[1].x, points[1].y);
-    CGContextAddLineToPoint(ctx, points[2].x, points[2].y);
-    CGContextAddLineToPoint(ctx, points[0].x, points[0].y);
-    CGContextSetFillColorWithColor(ctx, self.color.CGColor);
-    CGContextFillPath(ctx);
-    
-    CGContextBeginPath(ctx);
-    CGContextMoveToPoint(ctx, points[0].x, points[0].y);
-    CGContextAddLineToPoint(ctx, points[1].x, points[1].y);
-    CGContextAddLineToPoint(ctx, points[2].x, points[2].y);
-    
-    CGContextSetLineWidth(ctx, self.layer.borderWidth);
-    CGContextSetStrokeColorWithColor(ctx, self.layer.borderColor);
-    CGContextSetFillColorWithColor(ctx, [UIColor clearColor].CGColor);
-    CGContextStrokePath(ctx);
-    
-    self.layer.borderWidth = 0.0;
-    
-    self.transform = CGAffineTransformMakeRotation(self.direction);
-    
-    
-}
-
-+(ZSArrow *) arrowWithFrame:(CGRect)frame direction:(double)direction color:(UIColor *)color
-{
-    ZSArrow *arrow = [[ZSArrow alloc] initWithFrame:frame];
-    arrow.direction = direction;
-    arrow.color = color;
-    return arrow;
-}
-@end
 
 

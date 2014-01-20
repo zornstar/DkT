@@ -132,9 +132,9 @@ typedef enum {
         self.tableView.pullToRefreshView.activityIndicatorViewColor = [UIColor activeColor];
         
         [self.tableView.pullToRefreshView setTitle:@"Pull to refresh docket." forState:SVPullToRefreshStateStopped];
-        [self.tableView.pullToRefreshView setSubtitle:@"PACER account will be charged." forState:SVPullToRefreshStateStopped];
+        [self.tableView.pullToRefreshView setSubtitle:@"PACER account will be charged for updates." forState:SVPullToRefreshStateStopped];
         [self.tableView.pullToRefreshView setTitle:@"Refreshing docket..." forState:SVPullToRefreshStateLoading];
-        [self.tableView.pullToRefreshView setSubtitle:@"PACER account will be charged." forState:SVPullToRefreshStateLoading];
+        [self.tableView.pullToRefreshView setSubtitle:@"PACER account will be charged for updates." forState:SVPullToRefreshStateLoading];
     }
 }
 
@@ -705,6 +705,7 @@ typedef enum {
     }];
 }
 
+-(void) handleDocketError:(DkTDocket *)docket { [self handleFailedConnection]; }
 -(void) handleDocket:(DkTDocket *)docket entries:(NSArray *)entries to:(NSString *)to from:(NSString *)from
 {
     DkTBookmarkManager *manager = [DkTBookmarkManager sharedManager];
@@ -875,6 +876,8 @@ typedef enum {
         
         SIAlertViewHandler dismissHandler = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? ^(SIAlertView *alertView) {
             
+            
+            
             lvc.modalPresentationStyle = UIModalPresentationFormSheet;
             UIViewController *dvc = [UIApplication sharedApplication].keyWindow.rootViewController.presentedViewController; //ugly, but it gets the rootViewController of the modal view
             
@@ -886,8 +889,8 @@ typedef enum {
             [dvc.view.window addGestureRecognizer:tapGesture];
             lvc.view.superview.backgroundColor = [UIColor clearColor];
             //[lvc.view.superview setFrame:CGRectInset(lvc.view.superview.frame, 100, 60)];
-            [lvc.view setFrame:CGRectMake(140, 160, 280, 300)];
-            
+            [lvc.view setFrame:CGRectMake(140, 160, 260, 300)];
+            lvc.view.layer.cornerRadius = 5.0;
             //[lvc.view.superview setCenter:point];
             
         } :
@@ -1132,7 +1135,7 @@ typedef enum {
     lvc.view.layer.cornerRadius = 5.0;
     lvc.view.center = self.view.center;
     lvc.view.layer.shadowRadius = 8.;
-    lvc.view.opaque = YES;
+    lvc.view.opaque = NO;
     lvc.modal = YES;
     
     return lvc;
@@ -1156,15 +1159,10 @@ typedef enum {
     if(self.direction == UISwipeGestureRecognizerDirectionUp || self.direction == UISwipeGestureRecognizerDirectionDown)
         self.direction = UISwipeGestureRecognizerDirectionLeft | UISwipeGestureRecognizerDirectionRight;
 }
--(void) handleDoubleSwipeUp:(UISwipeGestureRecognizer *)sender
-{
-    self.direction = UISwipeGestureRecognizerDirectionUp;
-}
 
--(void) handleDoubleSwipeDown:(UISwipeGestureRecognizer *)sender
-{
-    self.direction = UISwipeGestureRecognizerDirectionDown;
-}
+-(void) handleDoubleSwipeUp:(UISwipeGestureRecognizer *)sender { self.direction = UISwipeGestureRecognizerDirectionUp; }
+
+-(void) handleDoubleSwipeDown:(UISwipeGestureRecognizer *)sender { self.direction = UISwipeGestureRecognizerDirectionDown; }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
 {

@@ -1,6 +1,6 @@
 //
-//  PACERClient.m
-//  DkTp
+//  
+//
 //
 //  Created by Matthew Zorn on 5/20/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -290,7 +290,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                                 [sender handleDocket:docket entries:docketEntries to:to from:from];
                                /* if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsSecondaryEnabledKey] boolValue] && (to.length == 0) && (from.length == 0))
                                 {
-                                    [[PACERClient recapClient] uploadDocket:responseObject docket:docket];
+                                    [[PACERClient secondaryClient] uploadDocket:responseObject docket:docket];
                                 }*/
                                 
                             });
@@ -482,7 +482,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
     
     NSString *tempDir = NSTemporaryDirectory();
     
-    NSString *tempFilePath = [tempDir stringByAppendingString:[entry fileName]];
+    NSString *tempFilePath = [tempDir stringByAppendingString:[entry tempFileName]];
     //if file exists at temp path, then just get it from temppath
     if([[NSFileManager defaultManager] fileExistsAtPath:tempFilePath])
     {
@@ -511,9 +511,9 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                 if([sender respondsToSelector:@selector(handleDocumentsFromDocket:entry:entries:)])
                 {
                     
-                    /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                    /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsSecondaryClientEnabledKey] boolValue])
                     {
-                        [[PACERClient recapClient] uploadCasePDF:responseObject docketEntry:entry];
+                        [[PACERClient secondaryClient] uploadCasePDF:responseObject docketEntry:entry];
                     }*/
                     
                     NSArray *docketEntries = [PACERParser parseAppellateMultiDoc:entry html:responseObject];
@@ -542,9 +542,9 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                 
                 if([sender respondsToSelector:@selector(didDownloadDocketEntry:atPath:)]) [sender didDownloadDocketEntry:entry atPath:tempFilePath];
                 
-                /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsSecondaryClientEnabledKey] boolValue])
                 {
-                    [[PACERClient recapClient] uploadCasePDF:responseObject docketEntry:entry];
+                    [[PACERClient secondaryClient] uploadCasePDF:responseObject docketEntry:entry];
                 }*/
                 
             }
@@ -565,7 +565,8 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
 {
     NSString *tempDir = NSTemporaryDirectory();
     
-    NSString *tempFilePath = [tempDir stringByAppendingString:[entry fileName]];
+    NSString *tempFilePath = [tempDir stringByAppendingString:[entry tempFileName]];
+    
     //if file exists at temp path, then just get it from temppath
     if([[NSFileManager defaultManager] fileExistsAtPath:tempFilePath])
     {
@@ -603,9 +604,9 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
             if([sender respondsToSelector:@selector(handleDocumentsFromDocket:entry:entries:)])
             {
                 /*
-                if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsSecondaryClientEnabledKey] boolValue])
                 {
-                    [[PACERClient recapClient] uploadCasePDF:responseObject docketEntry:entry];
+                    [[PACERClient secondaryClient] uploadCasePDF:responseObject docketEntry:entry];
                 }*/
 
                 NSArray *docketEntries = [PACERParser parseMultiDoc:entry html:responseObject];
@@ -637,9 +638,9 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                     
                 }
                 
-                /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsSecondaryClientEnabledKey] boolValue])
                 {
-                    [[PACERClient recapClient] uploadCasePDF:responseObject docketEntry:entry];
+                    [[PACERClient secondaryClient] uploadCasePDF:responseObject docketEntry:entry];
                 
                 }*/
                 
@@ -664,10 +665,10 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                     }
                     
                     
-                    /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsRECAPEnabledKey] boolValue])
+                    /*if([[[DkTSettings sharedSettings] valueForKey:DkTSettingsSecondaryClientEnabledKey] boolValue])
                     {
                         NSData *pdf = [NSData dataWithContentsOfFile:tempFilePath];
-                        [[PACERClient recapClient] uploadCasePDF:pdf docketEntry:entry];
+                        [[PACERClient secondaryClient] uploadCasePDF:pdf docketEntry:entry];
                         
                     }*/
                     
@@ -872,40 +873,6 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         [requestOp start];
     }
     
-}
-
-
--(BOOL) cookieExists
-{
-    NSArray *cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:@"http://uscourts.gov/"]];
-    
-    for(NSHTTPCookie *cookie in cookies)
-    {
-        NSDictionary *cookieDict = [cookie properties];
-        if([cookieDict objectForKey:NSHTTPCookieName])
-        {
-            return TRUE;
-        }
-        
-    }
-    
-    DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Session Expired" andMessage:@"PACER session expired. Login required."];
-    
-    [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-        [alertView dismissAnimated:YES];
-        
-        if([[[DkTSession sharedInstance] delegate] respondsToSelector:@selector(cookieDidExpireWithReveal:)])
-        {
-            [[[DkTSession sharedInstance] delegate] cookieDidExpireWithReveal:YES];
-        }
-    
-        
-    }];
-    
-    if([[DkTAlertView sharedQueue] count] == 0) [alertView show];
-    
-    
-    return FALSE;
 }
 
 -(void) setReceiptCookie

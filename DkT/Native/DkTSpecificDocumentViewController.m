@@ -1,6 +1,4 @@
-//
-//  DkTSealedDocumentViewController.m
-//  DkT
+
 //
 //  Created by Matthew Zorn on 7/14/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.

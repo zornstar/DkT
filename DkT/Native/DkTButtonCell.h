@@ -1,6 +1,4 @@
-//
-//  DkTButtonCell.h
-//  DkT
+
 //
 //  Created by Matthew Zorn on 10/5/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.

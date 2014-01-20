@@ -92,15 +92,9 @@
     [self.tableView reloadData];
 }
 
--(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
-{
-    return 1;
-}
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 1; }
 
--(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-    return self.data.count;
-}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section { return self.data.count; }
 
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -109,18 +103,11 @@
     if(cell == nil)
     {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
-        
         cell.textLabel.backgroundColor = [UIColor clearColor];
-        
         cell.textLabel.textAlignment = self.alignment;
-        
         cell.textLabel.textColor = [self.colors objectAtIndex:0];
-        
         cell.textLabel.font = self.font;
-        
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        
-        
     }
     
     cell.textLabel.text = [self.data objectAtIndex:indexPath.row];
@@ -150,9 +137,7 @@
     
     CGFloat height = MIN(self.frame.size.height, self.data.count * self.tableView.rowHeight) + self.arrowLength;
     CGRect start = _containerView.frame;
-    start.size.height = 0;
-    _containerView.frame = start;
-    CGRect frame = _containerView.frame;
+    start.size.height = 0; _containerView.frame = start; CGRect frame = _containerView.frame;
     frame.size.height += height + 25;
     
     CGRect tableViewStart = _tableView.frame;
@@ -222,14 +207,14 @@
     
     CGPoint points[3] = { CGPointMake(0, rect.size.height-1), CGPointMake(rect.size.width/2., 0), CGPointMake(rect.size.width, rect.size.height-1) };
     
-    /*
+    
     CGContextBeginPath(ctx);
     CGContextMoveToPoint(ctx, points[2].x, points[2].y);
     CGContextAddLineToPoint(ctx, points[0].x, points[0].y);
     CGContextSetLineWidth(ctx, self.layer.borderWidth+1);
     CGContextSetStrokeColorWithColor(ctx, self.arrowColor.CGColor);
-    CGContextSetFillColorWithColor(ctx, [UIColor clearColor].CGColor);
-    CGContextStrokePath(ctx);*/
+    //CGContextSetFillColorWithColor(ctx, [UIColor clearColor].CGColor);
+    CGContextStrokePath(ctx);
     
     CGContextBeginPath(ctx);
     CGContextMoveToPoint(ctx, points[0].x, points[0].y);

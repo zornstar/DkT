@@ -10,6 +10,7 @@
 #import "DkTDocumentsViewController.h"
 #import "DkTTabBar.h"
 
+#import "ZSHelpController.h"
 #import "UIImage+Utilities.h"
 #import <QuartzCore/QuartzCore.h>
 
@@ -166,9 +167,32 @@
     // Dispose of any resources that can be recreated.
 }
 
-
+-(void) willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+{
+    CGFloat rotation = 0;
+    switch (toInterfaceOrientation) {
+        case UIInterfaceOrientationPortrait:
+            rotation = 0;
+            break;
+        case UIInterfaceOrientationLandscapeRight:
+            rotation = M_PI_2;
+            break;
+        case UIInterfaceOrientationPortraitUpsideDown:
+            rotation = M_PI;
+            break;
+        case UIInterfaceOrientationLandscapeLeft:
+            rotation = 3*M_PI_2;
+            break;
+        default:
+            break;
+    }
+    
+    [[ZSHelpController sharedHelpController] setRotation:rotation];
+    
+}
 -(void) didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
 {
+    
     
     
     CGRect applicationFrame = [UIScreen mainScreen].applicationFrame;
@@ -176,6 +200,7 @@
     [self.view addSubview:tabBarImageView];
     
     self.tabBar.layer.anchorPoint = CGPointMake(0, 0);
+    
     if(UIInterfaceOrientationIsPortrait(fromInterfaceOrientation))
     {
         

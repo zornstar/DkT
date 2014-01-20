@@ -11,6 +11,7 @@
 #import "DkTDocumentManager.h"
 #import "PKRevealController.h"
 #import "DkTImageCache.h"
+#import "NSString+Utilities.h"
 
 
 @interface DkTDetailViewController ()
@@ -27,6 +28,8 @@
 @property (strong, nonatomic) UIActivityViewController *activityController;
 @property (strong, nonatomic) UIPopoverController *masterPopoverController;
 @property (nonatomic, readonly, getter = hasAppeared) BOOL appeared;
+@property (nonatomic) SEL toggleMasterVisibleSelector;
+@property (nonatomic, assign) id svc;
 
 @end
 
@@ -92,12 +95,14 @@
     
     if(!self.file)
     {
+    
+        
         if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
         {
-            [self.docketButton addTarget:[self splitViewController] action:@selector(toggleMasterVisible:) forControlEvents:UIControlEventTouchUpInside];
+            [self.docketButton addTarget:self action:@selector(toggleMasterVisible) forControlEvents:UIControlEventTouchUpInside];
         }
-        
-        else
+    
+        else if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
         {
             [self.docketButton addTarget:self action:@selector(revealPanel:) forControlEvents:UIControlEventTouchUpInside];
         }
@@ -122,7 +127,8 @@
         if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) [self revealPanel:nil];
         
         else if (UIInterfaceOrientationIsPortrait([[UIApplication sharedApplication] statusBarOrientation])){
-            [self.splitViewController performSelector:@selector(toggleMasterVisible:)];
+            
+                [self toggleMasterVisible];
         }
     }
     _appeared = YES;
@@ -182,10 +188,7 @@
     // Dispose of any resources that can be recreated.
 }
 
--(void) save
-{
-    [DkTDocumentManager saveDocketEntry:self.docketEntry atTempPath:self.filePath];
-}
+-(void) save { [DkTDocumentManager saveDocketEntry:self.docketEntry atTempPath:self.filePath]; }
 
 -(void) revealPanel:(id)sender
 {
@@ -212,7 +215,7 @@
             subject = [NSString stringWithFormat:@"%@ - %@", docketName, self.title];
             [mailVC setMessageBody:[self.file objectForKey:DkTFileSummaryKey] isHTML:NO];
             NSData *data = [NSData dataWithContentsOfFile:self.filePath];
-            [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:[NSString stringWithFormat:@"%@ - %@", docketName, [self.file objectForKey:DkTFileEntryKey]]];
+            [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:[NSString stringWithFormat:@"%@ - %.01f", docketName, [[self.file objectForKey:DkTFileEntryKey] floatValue]]];
             
         }
         
@@ -261,17 +264,19 @@
 
 - (void)splitViewController:(UISplitViewController *)splitController willHideViewController:(UIViewController *)viewController withBarButtonItem:(UIBarButtonItem *)barButtonItem forPopoverController:(UIPopoverController *)popoverController
 {
-    
-    if(!self.file) {
-        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:_docketButton];
-    }
-    
-    
+    if(_svc == nil) self.svc = splitController;
+    if(_toggleMasterVisibleSelector == nil) self.toggleMasterVisibleSelector = barButtonItem.action;
+   
+  
+    barButtonItem.customView = _docketButton;
+    self.navigationItem.leftBarButtonItem = barButtonItem;
    _masterPopoverController = popoverController;
 }
 
 - (void)splitViewController:(UISplitViewController *)splitController willShowViewController:(UIViewController *)viewController invalidatingBarButtonItem:(UIBarButtonItem *)barButtonItem
 {
+    if(_svc == nil) self.svc = splitController;
+    if(_toggleMasterVisibleSelector == nil) self.toggleMasterVisibleSelector = barButtonItem.action;
     
     self.navigationItem.leftBarButtonItem = nil;
     _masterPopoverController = nil;
@@ -298,19 +303,14 @@
 -(UIActivityViewController *) activityController
 {
     
-    __weak DkTDetailViewController *weakSelf = self;
-    
     if(_activityController == nil)
     {
-            NSURL *url = [NSURL fileURLWithPath:self.filePath];
-            NSArray *data = @[url];
-            UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:data
+        NSURL *url = [NSURL fileURLWithPath:self.filePath];
+        NSArray *objectsToShare = @[url];
+        UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:objectsToShare
                                                                                      applicationActivities:nil];
         
-        
-        
         NSMutableArray *excludedActivities = [@[UIActivityTypeAssignToContact, UIActivityTypePostToFacebook, UIActivityTypePostToTwitter,UIActivityTypePostToWeibo, UIActivityTypeSaveToCameraRoll, UIActivityTypeMail] mutableCopy];
-        
         IOS7([excludedActivities addObject:UIActivityTypeAddToReadingList];, );
         IOS7([excludedActivities addObject:UIActivityTypePostToVimeo];, );
         IOS7([excludedActivities addObject:UIActivityTypePostToFlickr];, );
@@ -321,14 +321,6 @@
        
         activityVC.excludedActivityTypes = excludedActivities;
         
-        
-        activityVC.completionHandler = ^(NSString *activityType, BOOL completed) {
-            
-          // if(activityType == UIActivityTypePrint) [self print];
-            
-            if(activityType == UIActivityTypeMail) [weakSelf mail];
-    
-        };
         
         _activityController = activityVC;
         
@@ -363,11 +355,14 @@
     
     else
     {
+        if(self.activityController.presentingViewController) self.activityController = nil;
+        
         [self presentViewController:self.activityController animated:YES completion:nil];
     }
     
     
 }
+
 
 -(void) popoverControllerDidDismissPopover:(UIPopoverController *)popoverController
 {
@@ -380,9 +375,21 @@
     
     if([self.masterPopoverController isPopoverVisible])
     {
-        [self.splitViewController performSelector:@selector(toggleMasterVisible:)];
+        [self toggleMasterVisible];
         self.masterPopoverController = nil;
+        self.svc = nil;
+        self.toggleMasterVisibleSelector = nil;
     }
+}
+
+-(void) toggleMasterVisible {
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+    if(self.svc && self.toggleMasterVisibleSelector)
+        [self.svc performSelector:self.toggleMasterVisibleSelector];
+#pragma clang diagnostic pop
+    
 }
 
 @end

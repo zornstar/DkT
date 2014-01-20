@@ -15,6 +15,7 @@
 #import "FSButton.h"
 #import <QuartzCore/QuartzCore.h>
 #import "MBProgressHUD.h"
+#import "PKRevealController.h"
 
 typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, DkTDocumentOperationZipping = 1} DkTDocumentOperations;
 
@@ -62,8 +63,8 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
     self.noDocumentLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
     [self.view addSubview:self.noDocumentLabel];
     
+    
     if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) [PSMenuItem installMenuHandlerForObject:self.tableView];
-  
 }
 
 - (void)didReceiveMemoryWarning
@@ -87,6 +88,8 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
 
 -(void) resizeTableView
 {
+    self.tableView.frame = self.view.frame;
+   
     NSInteger rows = 0;
     
     for(int i = 0; i < [self.tableView numberOfSections]; ++i)
@@ -97,9 +100,11 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
     CGRect frame;
     frame.size.width = self.view.frame.size.width*.85;
     frame.origin = CGPointMake((self.view.frame.size.width-frame.size.width)/2.0,(self.view.frame.size.width-frame.size.width)/2.0);
-    //NSLog(@"%f",self.view.frame.size.height);
     frame.size.height = MIN(self.tableView.rowHeight*rows+5*self.tableView.numberOfSections, self.view.frame.size.height-frame.origin.y);
-    _tableView.frame = frame;
+    
+    self.tableView.frame = frame;
+    
+    self.tableView.frame = CGRectInset(self.view.frame, 15, 15);
 }
 
 
@@ -219,15 +224,18 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
                     CGRect targetRect = cell.contentView.frame;
                     targetRect.origin = [self.view convertPoint:targetRect.origin fromView:self.tableView];
                     
-                    if(![_doccontroller presentOpenInMenuFromRect:targetRect inView:self.view animated:YES])
-                    {
-                        DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"No PDF Application" andMessage:@"You do not have an external application for reading pdfs."];
-                        [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-                            [alertView dismissAnimated:YES];
-                        }];
+                    if (self.view.window != nil)
+                        if(![_doccontroller presentOpenInMenuFromRect:targetRect inView:self.view animated:YES])
+                        {
+                            DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"No PDF Application" andMessage:@"You do not have an external application for reading pdfs."];
+                            [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                                [alertView dismissAnimated:YES];
+                            }];
+                            
+                            [alertView show];
+                        }
                         
-                        [alertView show];
-                    }
+                    
                 });
             }];
             
@@ -247,7 +255,7 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
         _tableView.delegate = self;
         _tableView.dataSource = self;
         _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-        _tableView.clipsToBounds = YES;
+        //_tableView.clipsToBounds = YES;
         _tableView.bounces = NO;
         IOS7(_tableView.separatorInset = UIEdgeInsetsZero;,);
         _tableView.scrollEnabled = YES;
@@ -255,6 +263,7 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
         _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
         _tableView.separatorColor = [UIColor darkerTextColor];
         _tableView.backgroundColor = [UIColor activeColor];
+        
         
     }
     
@@ -321,8 +330,7 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
             cell.contentView.opaque = YES;
             cell.textLabel.adjustsFontSizeToFitWidth = YES;
             [cell.contentView addGestureRecognizer:self.longPress];
-            //[cell.contentView addGestureRecognizer:self.pinchGesture];
-            cell.helpText = @"Press and hold to bundle documents into one pdf or create zip file with all documents.";
+            cell.helpText = @"Press and hold to bundle documents into one pdf, or to create a zip file with all documents.";
         }
         
         BOOL collapsed = [[sectionDictionary objectForKey:@"collapsed"] boolValue];
@@ -335,8 +343,8 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
         
         BOOL aiv = FALSE;
         
-        if( (self.batchPath != nil)&& ([indexPath compare:self.batchPath] == NSOrderedSame)) aiv = TRUE;
-        if( (self.zipPath != nil)&& ([indexPath compare:self.zipPath] == NSOrderedSame)) aiv = TRUE;
+        if( (self.batchPath != nil) && ([indexPath compare:self.batchPath] == NSOrderedSame)) aiv = TRUE;
+        if( (self.zipPath != nil) && ([indexPath compare:self.zipPath] == NSOrderedSame)) aiv = TRUE;
         
         cell.accessoryView = aiv ? [self activityIndicator]: nil;
         
@@ -359,10 +367,10 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
             
             zipDocket.frame = CGRectMake(unit,0, unit, unit);
             
-            CGFloat width = CGRectGetMinX(exportButton.frame) - unit;
-            cell.textLabel.frame =  CGRectMake(cell.textLabel.frame.origin.x,cell.textLabel.frame.origin.y,width,cell.textLabel.frame.size.height);
+            CGFloat width = cell.contentView.frame.size.width - unit*2;
+            cell.textLabel.autoresizingMask = UIViewAutoresizingFlexibleRightMargin;
             exportButton.backgroundColor = [UIColor clearColor];
-            cell.buttonView = [[UIView alloc] initWithFrame:CGRectMake(cell.contentView.frame.size.width - unit*2, self.tableView.rowHeight/2. - unit/2., unit*2, unit)];
+            cell.buttonView = [[UIView alloc] initWithFrame:CGRectMake(width, self.tableView.rowHeight/2. - unit/2., unit*2, unit)];
             cell.buttonView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
             [cell.buttonView addSubview:exportButton];
             [cell.buttonView addSubview:zipDocket];
@@ -601,10 +609,6 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
     }
 }
 
--(BOOL) tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    return YES;
-}
 
 -(void) tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -673,11 +677,6 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
     return [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
 }
 
--(UIPinchGestureRecognizer *) pinchGesture
-{
-    return [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(handlePinchGesture:)];
-}
-
 -(void) handleLongPress:(UILongPressGestureRecognizer *)sender
 {
     if(sender.state == UIGestureRecognizerStateBegan)
@@ -721,6 +720,10 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
 {
     [[UIMenuController sharedMenuController] setMenuItems:nil];
     [[DkTDocumentManager sharedManager] sync];
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return YES;
 }
 
 @end

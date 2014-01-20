@@ -84,7 +84,7 @@
     self.noDocumentLabel.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:self.noDocumentLabel];
     self.noDocumentLabel.hidden = (self.bookmarks.count > 0);
-    self.noDocumentLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
+    self.noDocumentLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin;
 }
 
 #pragma mark
@@ -415,11 +415,7 @@
         
         _tableView.rowHeight = PAD_OR_POD(65, 60);
         
-        CGRect frame;
-        frame.size.height = _tableView.rowHeight * self.bookmarks.count;
-        frame.size.width = self.view.frame.size.width*.85;
-        frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,(self.view.frame.size.width -frame.size.width)/2.0);
-        _tableView.frame = frame;
+        CGRect frame; frame.size.height = _tableView.rowHeight * self.bookmarks.count; frame.size.width = self.view.frame.size.width*.85; frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,(self.view.frame.size.width -frame.size.width)/2.0); _tableView.frame = frame;
         _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _tableView.dataSource = self;
         _tableView.delegate = self;

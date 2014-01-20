@@ -1,6 +1,4 @@
-//
-//  DkTCodeManager.m
-//  DkT
+
 //
 //  Created by Matthew Zorn on 7/15/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -311,7 +309,7 @@ NSString* const DkTCodeTypeKey = @"type";
               DkTCodeMake(@"Montana", @"Bankr. D. Mont.", @"mt", @"mtbke",DkTCodeTypeBankruptcyCourt),
               
               //Nebraska
-              DkTCodeMake(@"Nebraska", @"Bankr. D. Neb.", @"nb", @"nbbke",DkTCodeTypeBankruptcyCourt),
+              DkTCodeMake(@"Nebraska", @"Bankr. D. Neb.", @"ne", @"nebke",DkTCodeTypeBankruptcyCourt),
               
               //Nevada
               DkTCodeMake(@"Nevada", @"Bankr. D. Nev.", @"nv", @"nvbke",DkTCodeTypeBankruptcyCourt),
@@ -333,7 +331,7 @@ NSString* const DkTCodeTypeKey = @"type";
             
               //Northern Mariana Islands
               
-              DkTCodeMake(@"Northern Mariana Islands", @"Bankr. D.N. Mar. I.", @"nmi",@"nmidce",DkTCodeTypeBankruptcyCourt),
+              DkTCodeMake(@"Northern Mariana Islands", @"Bankr. D.N. Mar. I.", @"nmi",@"nmibke",DkTCodeTypeBankruptcyCourt),
               
               //North Carolina
               DkTCodeMake(@"North Carolina Eastern", @"Bankr. E.D.N.C.", @"nce",@"ncebke",DkTCodeTypeBankruptcyCourt),
@@ -345,7 +343,9 @@ NSString* const DkTCodeTypeKey = @"type";
               DkTCodeMake(@"Ohio Southern", @"Bankr. S.D. Oh.", @"ohs",@"ohsbke",DkTCodeTypeBankruptcyCourt),
             
               //Oklahoma
-              DkTCodeMake(@"Oklahoma", @"Bankr. D. Okla.", @"ok", @"okb", DkTCodeTypeBankruptcyCourt),
+              DkTCodeMake(@"Oklahoma", @"Bankr. E.D. Okla.", @"oke", @"okebke", DkTCodeTypeBankruptcyCourt),
+              DkTCodeMake(@"Oklahoma Northern", @"Bankr. N.D. Okla.", @"okn", @"oknbke", DkTCodeTypeBankruptcyCourt),
+              DkTCodeMake(@"Oklahoma Western", @"Bankr. W.D. Okla.", @"okw", @"okwbke", DkTCodeTypeBankruptcyCourt),
               
               //Oregon
               DkTCodeMake(@"Oregon", @"Bankr. D. Or.", @"or", @"orbke",DkTCodeTypeBankruptcyCourt),
@@ -511,7 +511,7 @@ NSString* const DkTCodeTypeKey = @"type";
               DkTCodeMake(@"Montana", @"D. Mont.", @"mt", @"mtdce",DkTCodeTypeDistrictCourt),
               
               //Nebraska
-              DkTCodeMake(@"Nebraska", @"D. Neb.", @"nb", @"nbdce",DkTCodeTypeDistrictCourt),
+              DkTCodeMake(@"Nebraska", @"D. Neb.", @"ne", @"nedce",DkTCodeTypeDistrictCourt),
               
               //Nevada
               DkTCodeMake(@"Nevada", @"D. Nev.", @"nv", @"nvdce",DkTCodeTypeDistrictCourt),
@@ -544,7 +544,9 @@ NSString* const DkTCodeTypeKey = @"type";
               DkTCodeMake(@"Ohio Southern", @"S.D. Oh.", @"ohs",@"ohsdce",DkTCodeTypeDistrictCourt),
               
               //Oklahoma
-              DkTCodeMake(@"Oklahoma", @"D. Okla.", @"ok", @"okdce", DkTCodeTypeDistrictCourt),
+              DkTCodeMake(@"Oklahoma Eastern", @"E.D. Okla.", @"oke", @"okedce", DkTCodeTypeDistrictCourt),
+              DkTCodeMake(@"Oklahoma Northern", @"N.D. Okla.", @"okn", @"okndce", DkTCodeTypeDistrictCourt),
+              DkTCodeMake(@"Oklahoma Western", @"W.D. Okla.", @"okw", @"okwdce", DkTCodeTypeDistrictCourt),
               
               //Oregon
               DkTCodeMake(@"Oregon", @"D. Or.", @"or", @"ordce", DkTCodeTypeDistrictCourt),

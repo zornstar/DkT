@@ -125,7 +125,6 @@
 		9550D5FD18639CFC007F3C8A /* DkTAboutViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9550D59918639CFC007F3C8A /* DkTAboutViewController.m */; };
 		9550D5FE18639CFC007F3C8A /* DkTAlertView.m in Sources */ = {isa = PBXBuildFile; fileRef = 9550D59B18639CFC007F3C8A /* DkTAlertView.m */; };
 		9550D5FF18639CFC007F3C8A /* DkTAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9550D59D18639CFC007F3C8A /* DkTAppDelegate.m */; };
-		9550D60018639CFC007F3C8A /* DkTBookmarkDetailViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9550D59F18639CFC007F3C8A /* DkTBookmarkDetailViewController.m */; };
 		9550D60118639CFC007F3C8A /* DkTBookmarkManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 9550D5A118639CFC007F3C8A /* DkTBookmarkManager.m */; };
 		9550D60218639CFC007F3C8A /* DkTBookmarkViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9550D5A318639CFC007F3C8A /* DkTBookmarkViewController.m */; };
 		9550D60318639CFC007F3C8A /* DkTButtonCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 9550D5A518639CFC007F3C8A /* DkTButtonCell.m */; };
@@ -370,8 +369,6 @@
 		9550D59B18639CFC007F3C8A /* DkTAlertView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DkTAlertView.m; sourceTree = "<group>"; };
 		9550D59C18639CFC007F3C8A /* DkTAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DkTAppDelegate.h; sourceTree = "<group>"; };
 		9550D59D18639CFC007F3C8A /* DkTAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DkTAppDelegate.m; sourceTree = "<group>"; };
-		9550D59E18639CFC007F3C8A /* DkTBookmarkDetailViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DkTBookmarkDetailViewController.h; sourceTree = "<group>"; };
-		9550D59F18639CFC007F3C8A /* DkTBookmarkDetailViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DkTBookmarkDetailViewController.m; sourceTree = "<group>"; };
 		9550D5A018639CFC007F3C8A /* DkTBookmarkManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DkTBookmarkManager.h; sourceTree = "<group>"; };
 		9550D5A118639CFC007F3C8A /* DkTBookmarkManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DkTBookmarkManager.m; sourceTree = "<group>"; };
 		9550D5A218639CFC007F3C8A /* DkTBookmarkViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DkTBookmarkViewController.h; sourceTree = "<group>"; };
@@ -765,8 +762,6 @@
 				9550D59B18639CFC007F3C8A /* DkTAlertView.m */,
 				9550D59C18639CFC007F3C8A /* DkTAppDelegate.h */,
 				9550D59D18639CFC007F3C8A /* DkTAppDelegate.m */,
-				9550D59E18639CFC007F3C8A /* DkTBookmarkDetailViewController.h */,
-				9550D59F18639CFC007F3C8A /* DkTBookmarkDetailViewController.m */,
 				9550D5A018639CFC007F3C8A /* DkTBookmarkManager.h */,
 				9550D5A118639CFC007F3C8A /* DkTBookmarkManager.m */,
 				9550D5A218639CFC007F3C8A /* DkTBookmarkViewController.h */,
@@ -1269,7 +1264,6 @@
 				9550D58F18639CEC007F3C8A /* UIImageView+AFNetworking.m in Sources */,
 				9550D58E18639CEC007F3C8A /* UIImage+Utilities.m in Sources */,
 				9550D64718639D02007F3C8A /* MBProgressHUD.m in Sources */,
-				9550D60018639CFC007F3C8A /* DkTBookmarkDetailViewController.m in Sources */,
 				9550D61418639CFC007F3C8A /* DkTRootViewController.m in Sources */,
 				9550D61B18639CFC007F3C8A /* DkTSettingsCell.m in Sources */,
 				9550D4C518639CD6007F3C8A /* AFNetworkActivityIndicatorManager.m in Sources */,
@@ -1357,7 +1351,8 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "iPhone Developer: Matthew Zorn (G28M2Y7P26)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Matthew Zorn (G28M2Y7P26)";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -1372,7 +1367,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
 				ONLY_ACTIVE_ARCH = YES;
-				PROVISIONING_PROFILE = "52C8FAD9-158D-4111-B364-2A7137013263";
+				PROVISIONING_PROFILE = "96EB5E32-90F3-4B7D-AF08-6F2FFF5CFBE4";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -1390,7 +1385,8 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "iPhone Developer: Matthew Zorn (G28M2Y7P26)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Matthew Zorn (G28M2Y7P26)";
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -1398,7 +1394,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
-				PROVISIONING_PROFILE = "52C8FAD9-158D-4111-B364-2A7137013263";
+				PROVISIONING_PROFILE = "96EB5E32-90F3-4B7D-AF08-6F2FFF5CFBE4";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
@@ -1411,7 +1407,7 @@
 				ALWAYS_SEARCH_USER_PATHS = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CODE_SIGN_IDENTITY = "iPhone Developer: Matthew Zorn (G28M2Y7P26)";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "DkT/DkT-Prefix.pch";
@@ -1431,7 +1427,7 @@
 				ALWAYS_SEARCH_USER_PATHS = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CODE_SIGN_IDENTITY = "iPhone Developer: Matthew Zorn (G28M2Y7P26)";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "DkT/DkT-Prefix.pch";

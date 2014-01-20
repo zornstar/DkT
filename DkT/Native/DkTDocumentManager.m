@@ -1,6 +1,4 @@
-//
-//  DkTDocumentManager.m
-//  DkTp
+
 //
 //  Created by Matthew Zorn on 5/21/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
@@ -235,6 +233,8 @@ float floatForEntry (id obj)
             NSDictionary *docketDir = [array objectAtIndex:0];
             NSMutableArray *files = [docketDir objectForKey:DkTFileDocketFilesKey];
             [files removeObject:file];
+            
+            if(files.count == 0) [self removeDocketNamed:docketName];
         }
         
         [[DkTDocumentManager sharedManager] sync];
@@ -264,16 +264,15 @@ float floatForEntry (id obj)
     [self.dockets writeToFile:[DkTDocumentManager metadataFilePath] atomically:YES];
 }
 
-
-
 +(NSString *)saveDocumentAtTempPath:(NSString *)tempPath toSavedDocketNamed:(NSString *)name
 {
+    
     NSString *escapedName = encodeToPercentEscapeString(name);
     NSFileManager *manager = [NSFileManager defaultManager];
      NSError *error;
     
-    NSString *fileName = [tempPath lastPathComponent];
-    
+    NSString *lpc = [tempPath lastPathComponent];
+    NSString *fileName = [[lpc componentsSeparatedByString:@"&"] lastObject];
     NSString *docketPath = [DkTDocumentManager docketsFolder];
     
     if (![manager fileExistsAtPath:docketPath])

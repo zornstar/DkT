@@ -11,6 +11,7 @@
 
 #define kAppName @"FedDocket"
 #define kAppID @""
+
 #define kActiveColor [UIColor colorWithRed:104./255 green:135./255 blue:152./255 alpha:1]
 #define kActiveColorLight [UIColor colorWithRed:200./255 green:221./255 blue:230./255 alpha:1]
 

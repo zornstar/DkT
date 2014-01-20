@@ -1,7 +1,4 @@
-//
-//  DkTAppDelegate.m
-//  DkTp
-//
+
 //  Created by Matthew Zorn on 5/19/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
@@ -67,9 +64,9 @@
     [[DkTAlertView appearance] setMessageColor:[UIColor darkerTextColor]];
     [[DkTAlertView appearance] setButtonColor:[UIColor inactiveColor]];
     
-    /*
-    IOS7([[UITableView appearance] setSeparatorInset:UIEdgeInsetsMake(0, 0, 0, 0)];,  );
-    IOS7(, [[UIBarButtonItem appearance] setTintColor:[UIColor activeColor]];);*/
+    
+   /* IOS7([[UITableView appearance] setSeparatorInset:UIEdgeInsetsMake(0, 0, 0, 0)];,  );*/
+    IOS7(, [[UIBarButtonItem appearance] setTintColor:[UIColor activeColor]];);
     if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
          [[UITabBar appearance] setSelectedImageTintColor:[UIColor inactiveColor]];
          [[UITabBar appearance] setSelectionIndicatorImage:[UIImage imageOfColor:[UIColor activeColor] size:CGSizeMake(324/3., 50)]];

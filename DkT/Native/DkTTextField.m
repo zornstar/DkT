@@ -34,8 +34,6 @@
         [item setEnabled:NO];
     }
     
-    NSLog(@"%@", [[[UIMenuController sharedMenuController] menuItems] description]);
-    
     if ([UIMenuController sharedMenuController]) {
         
         [[UIMenuController sharedMenuController] setMenuVisible:NO animated:NO];

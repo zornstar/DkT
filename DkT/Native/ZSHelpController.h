@@ -26,8 +26,8 @@ typedef enum {ZSTopLeft, ZSTopRight, ZSBottomLeft, ZSBottomRight, ZSCenter} ZSPo
 @property (nonatomic, strong) UIColor *backgroundColor;
 @property (nonatomic, strong) UIColor *secondaryBackgroundColor;
 @property (nonatomic, strong) UIColor *textColor;
-
 @property (nonatomic, strong) UIImage *icon;
+@property (nonatomic) CGFloat rotation;
 @property (nonatomic) CGSize size;
 
 #pragma mark - class methods 
@@ -57,11 +57,5 @@ typedef enum {ZSTopLeft, ZSTopRight, ZSBottomLeft, ZSBottomRight, ZSCenter} ZSPo
 @end
 
 @interface ZSHelpView : UIView
-
-@end
-
-@interface ZSArrow : UIView
-
-+(ZSArrow *) arrowWithFrame:(CGRect)frame direction:(double)direction color:(UIColor *)color;
 
 @end

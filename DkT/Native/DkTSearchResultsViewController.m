@@ -82,7 +82,7 @@
         IOS7(_tableView.separatorInset = UIEdgeInsetsZero;,);
         _tableView.rowHeight = PAD_OR_POD(65, 52);
         CGRect frame;
-        frame.size.height = self.view.frame.size.height * (PAD_OR_POD(.7, .6)) + self.results.count * self.tableView.sectionHeaderHeight;
+        frame.size.height = self.view.frame.size.height * (PAD_OR_POD(.7, .65)) + self.results.count * self.tableView.sectionHeaderHeight;
         frame.size.width = self.view.frame.size.width*.85;
         frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,(self.view.frame.size.width -frame.size.width*1.1));
         _tableView.frame = frame;
@@ -90,7 +90,7 @@
         _tableView.dataSource = self;
         _tableView.delegate = self;
         _tableView.scrollEnabled = YES;
-        _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         _tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
         _tableView.separatorColor = [UIColor activeColor];
         UIView *backgroundView = [[UIView alloc] init];
@@ -360,6 +360,7 @@
         _backButton.frame = frame;
         [_backButton setIconSpacing:15.];
         _backButton.layer.cornerRadius = 5.0;
+        _backButton.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
     }
     
     return _backButton;

@@ -1,7 +1,4 @@
-//
-//  DkTAboutViewController.m
-//  DkT
-//
+
 //  Created by Matthew Zorn on 7/31/13.
 //  Copyright (c) 2013 Matthew Zorn. All rights reserved.
 //
@@ -31,7 +28,7 @@
 -(void) setup
 {
     
-    NSString *aboutString = @"DkT is an iOS app that interfaces with PACER to help browse, manage, and share federal court dockets and documents with greater ease and less expense.\n\nDkT is  free and open-source, but normal PACER charges apply.  DkT is not affiliated with PACER or any other institution, and does not store or send  personal data except for use with PACER.\n\nGo to www._.com for more information.";
+    NSString *aboutString = @"DkT is an iOS app that interfaces with PACER to help you access, manage, save, and update federal court dockets and documents on your mobile device.\n\nDkT is a free and open-source application,  but normal PACER charges will apply for all newly downloaded dockets, documents, and docket updates.  No charges are incurred for viewing dockets or documents previously saved.\n\nDkT is not affiliated with PACER or any other institution, and does not communicate, store, or send personal data to any third-party except for direct use with PACER.\n\nSee www.dktapp.com for more information on the application.";
     NSAttributedString *attrString = [[NSAttributedString alloc] initWithString:aboutString];
     UITextView *aboutView = [[UITextView alloc] initWithFrame:CGRectZero];
     aboutView.attributedText = attrString;
