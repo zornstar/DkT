@@ -6,9 +6,7 @@
 <link rel="stylesheet" type="text/css" href="jquery.fullPage.css" />
 <link rel="stylesheet" type="text/css" href="stylesheets/main.css" />
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"> </script>
-<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js">
-</script>
-
+<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js"></script>
 <script src="http://vast-eng.github.io/jquery-popup-overlay/jquery.popupoverlay.js"></script>
 <script type="text/javascript" src="vendors/jquery.slimscroll.min.js"></script>
 <script type="text/javascript" src="jquery.fullPage.js"></script>
@@ -91,20 +89,13 @@ document.location = "mobile.html";
 				}
 			});
 			
-			$("#about").click(function(e){
-    			e.preventDefault();
-   				$(this).find(".popup").fadeIn("fast");
-		 	});
+			
 			
 			$("#howto").click(function(e){
     			e.preventDefault();
    				$.fn.fullpage.moveSectionDown();
 		 	});
 			
-			$("#popup").click(function(e){
-    			e.preventDefault();
-   				$(this).find(".popup").fadeOut("fast");
-		 	});
 			
 			$('#home_button').click(function(e) { 
 				var i = $(this).attr("id");
