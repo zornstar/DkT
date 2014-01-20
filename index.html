@@ -109,6 +109,17 @@ document.location = "mobile.html";
 			 $.fn.fullpage.activateMenu('login');
 			 
 			 $('#popup').popup();
+			 
+			 
+			 $("#about").click(function(e){
+    			e.preventDefault();
+   				$(this).find(".popup").fadeIn("fast");
+		 	});
+			
+			$("#popup").click(function(e){
+    			e.preventDefault();
+   				$(this).find(".popup").fadeOut("fast");
+		 	});
 			
 		});
 </script>
@@ -142,31 +153,26 @@ document.location = "mobile.html";
            			<div class="tab">
                			<div class="tab-content">
                   	 	<h3>A New Way to Browse PACER</h3>
-                        <p />
+                		 <p />
                    		<p>DkT is a feature-rich, custom PACER/ECF client for iOS.</p>
-                    	<p>Efficiently search dockets, bookmark and update dockets, view and save documents, manage logins, batch downloading, and more.</p>
-                    	<br /><br />
-               	<p align="center"><a href=""><img src="images/badge.png" /></a></p>
-                                	<p align="center"><a href="https://github.com/zornstar/DkT/tree/master"><button class="btn btn-github"><i class="fa fa-github"></i> | Github</button></a></p>
-                         <div id="infoMenu">
-							<ul>
-      							  <li> <a href="#" id="howto">HOW TO</a></li>
-								<li><a href="mailto:contact@dktapp.com">CONTACT</a></li>
-       							 <li> <a href="#" id="about" class="popup_open">ABOUT</a></li>
-                              </ul>
-            			</div>
+                    		<p>Efficiently search dockets, bookmark and update dockets, view and save documents, manage logins, batch downloading, and more.</p>
+                    		<br /><br />
+               			<p align="center"><a href=""><img src="images/badge.png" /></a></p>
+                                <p align="center"><a href="https://github.com/zornstar/DkT/tree/master"><button class="btn btn-github"><i class="fa fa-github"></i> | Github</button></a></p>
+                         		<div id="infoMenu">
+						<ul>
+      							  <li><a href="#" id="howto">HOW TO</a></li>
+							  <li><a href="mailto:contact@dktapp.com">CONTACT</a></li>
+       							  <li><a href="#" id="about" class="popup_open">ABOUT</a></li>
+                        			</ul>
+            				</div>
                 		</div>
-                       
-                    
-	
-</div>
+                        	</div>
         		</div>
     		</div>
-         </div>
+        </div>
 	</div>
-	 
-       
-	</div>
+</div>
 </div>
 <div class="section" id="section1">
 	
