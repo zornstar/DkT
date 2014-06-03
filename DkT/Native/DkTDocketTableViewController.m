@@ -5,7 +5,6 @@
 //
 
 #import "DkTSingleton.h"
-#import "DkTDocketTableViewController.h"
 #import "DkTDetailViewController.h"
 #import "UIImage+Utilities.h"
 #import "UIResponder+FirstResponder.h"
@@ -26,8 +25,7 @@
 #import "PKRevealController.h"
 #import "MBProgressHUD.h"
 #import "DkTImageCache.h"
-
-#import <QuartzCore/QuartzCore.h>
+#import "DkTDocketPrinter.h"
 
 typedef enum {
     DkTToolbarInfoVisible          = -1,
@@ -35,29 +33,33 @@ typedef enum {
     DkTToolbarDownloadProgressVisible = 1
 } DkTToolbarVisibility;
 
-@interface DkTDocketTableViewController ()
-{
-    
+typedef enum {
+    DkTTableViewSelectionModeNone = 0,
+    DkTTableViewSelectionBatch,
+    DkTTableViewSelectionEmail,
+} DkTTableViewSelectionMode;
+
+@interface DkTDocketTableViewController () {
+
 }
 
+@property (nonatomic) DkTTableViewSelectionMode mode;
 @property (nonatomic) NSInteger expandedRow;
 @property (nonatomic) CGFloat expandedHeight;
 @property (nonatomic, strong) UITableViewCell *expandedCell;
 @property (nonatomic) UISwipeGestureRecognizerDirection direction;
-
-@property (nonatomic, getter = isBatching) BOOL batching;
 @property (nonatomic) NSInteger completedDownloads;
-
 @property (nonatomic, strong) DkTDocketEntry *activeEntry;
 @property (nonatomic, strong) DkTDownload *batchDownload;
 @property (nonatomic, strong) UILabel *progressLabel;
-@property (nonatomic, strong) UIBarButtonItem *downloadDocketBarButtonItem;
+@property (nonatomic, strong) UIBarButtonItem *actionBarButtonItem;
 @property (nonatomic, strong) NSMutableArray *filteredEntries;
 @property (nonatomic, strong) UISearchBar *searchBar;
-
 @property (nonatomic, strong) UIView *batchDownloadView;
 @property (nonatomic, strong) UIView *docketInfoView;
 @property (nonatomic, strong) UILabel *lastUpdated;
+@property (nonatomic, strong) UIActivityViewController *activityController;
+@property (nonatomic, strong) UIPopoverController *actionPopoverController;
 
 @end
 
@@ -68,7 +70,7 @@ typedef enum {
     self = [super init];
     if (self) {
         self.contentSizeForViewInPopover = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ?  CGSizeMake(320.0, 600.0) : CGSizeMake(300.0, 600.0);
-        self.root = YES; self.local = NO; self.completedDownloads = 0; self.expandedRow = -1;
+        self.root = YES; self.local = NO; self.completedDownloads = 0; self.expandedRow = -1; self.mode = DkTTableViewSelectionModeNone;
     }
     return self;
 }
@@ -81,7 +83,6 @@ typedef enum {
     if(reverse) self.docketEntries = [[self.docketEntries reverseObjectEnumerator] allObjects];
    
     self.navigationController.navigationBarHidden = NO; self.navigationController.toolbarHidden = NO;
-    self.batching = NO;
     self.view.clipsToBounds = NO;
     self.filteredEntries = [self.docketEntries mutableCopy];
     self.tableView = [[UITableView alloc] initWithFrame:self.view.frame style:UITableViewStylePlain];
@@ -184,15 +185,15 @@ typedef enum {
 
 -(void) activateDownload
 {
-    if(self.batching == YES)
+    if(self.mode == DkTTableViewSelectionBatch)
     {
         [self dismissDownload];
         return;
     }
     
-    if(!self.batchDownload && ([[PACERClient sharedClient] checkNetworkStatusWithAlert:YES]) )
+    if([[PACERClient sharedClient] checkNetworkStatusWithAlert:YES])
     {
-        self.batching = YES;
+        self.mode = DkTTableViewSelectionBatch;
         self.tableView.allowsMultipleSelection = YES;
         [self toggleProgressLabel:DkTToolbarButtonsVisible];
     }
@@ -203,7 +204,7 @@ typedef enum {
 {
     [self toggleProgressLabel:DkTToolbarInfoVisible];
     for(NSIndexPath *i in self.tableView.indexPathsForSelectedRows) [self.tableView deselectRowAtIndexPath:i animated:NO];
-    self.batching = NO;
+    self.mode = DkTTableViewSelectionModeNone;
     self.tableView.allowsMultipleSelection = NO;
     [[DkTDownloadManager sharedManager] setDelegate:nil];
 }
@@ -252,16 +253,16 @@ typedef enum {
         [[DkTDownloadManager sharedManager] setBatchDownload:self.batchDownload];
         
         [self toggleProgressLabel:DkTToolbarDownloadProgressVisible];
-        self.progressLabel.text = [NSString stringWithFormat:@"0 out of %d complete.", entries.count];
+        self.progressLabel.text = [NSString stringWithFormat:@"0 out of %lu complete.", (unsigned long)entries.count];
         
         [self.batchDownload addEntries:entries completionBlock:^(DkTDownload *download, DkTDownloadCompletionStatus status) {
             
             download.parent.completedChildren++;
             
-            int completed = download.parent.completedChildren;
-            int total = download.parent.children.count;
+            NSInteger completed = download.parent.completedChildren;
+            NSInteger total = download.parent.children.count;
             
-            weakSelf.progressLabel.text = [NSString stringWithFormat:@"%d out of %d complete.", completed, total];
+            weakSelf.progressLabel.text = [NSString stringWithFormat:@"%ld out of %ld complete.", (long)completed, (long)total];
             NSInteger idx = [weakSelf.filteredEntries indexOfObject:download.entry];
             NSIndexPath *indexPath = [NSIndexPath indexPathForRow:idx inSection:0];
             
@@ -277,7 +278,7 @@ typedef enum {
         [DkTDownloadManager batchDownload:self.docket entries:entries sender:self];
         
         for(NSIndexPath *i in self.tableView.indexPathsForSelectedRows) [self.tableView deselectRowAtIndexPath:i animated:NO];
-        self.batching = NO;
+        self.mode = DkTTableViewSelectionModeNone;
         self.tableView.allowsMultipleSelection = NO;
     }
     
@@ -468,11 +469,52 @@ typedef enum {
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     
-    if(self.isBatching) return;
+    if(self.mode == DkTTableViewSelectionBatch) return;
+    
     
     //[[UIMenuController sharedMenuController] setMenuVisible:NO animated:YES];
     
     DkTDocketEntry *entry = [self.filteredEntries objectAtIndex:indexPath.row];
+    
+    if (self.mode == DkTTableViewSelectionEmail) {
+        
+        if(self.activeEntry) {
+            [self.tableView deselectRowAtIndexPath:indexPath animated:NO];
+            return;
+        }
+        
+        else self.activeEntry = entry;
+        
+        
+        if(entry.entryNumber.integerValue == 0) [self emailDocketItem:entry attachmentPath:nil];
+        
+        else {
+            DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Email Item" andMessage:@"Download attachments if available?"];
+            
+            [alertView addButtonWithTitle:@"YES" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                [self downloadEntry:entry cell:[tableView cellForRowAtIndexPath:indexPath]];
+                
+            }];
+            
+            [alertView addButtonWithTitle:@"NO" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                [self emailDocketItem:entry attachmentPath:nil];
+                self.mode = DkTTableViewSelectionModeNone;
+            }];
+            
+            [alertView show];
+        }
+        return;
+    }
+    
+    if(entry.entryNumber.integerValue == 0) return;
+    
+    [self downloadEntry:entry cell:[tableView cellForRowAtIndexPath:indexPath]];
+    
+    return;
+    
+}
+
+-(void) downloadEntry:(DkTDocketEntry *) entry cell:(UITableViewCell *)cell {
     
     if(entry.entryNumber.integerValue == 0) return;
     
@@ -481,20 +523,18 @@ typedef enum {
     NSString *path;
     
     if( (path = [entry.urls objectForKey:LocalURLKey]) ) [self didDownloadDocketEntry:entry atPath:path cost:NO];
- 
+    
     /*
-    else if ( (path = [entry.urls objectForKey:DkTURLKey]) )
-    {
-        [self menuForIndexPath:indexPath];
-        return;
-    }*/
+     else if ( (path = [entry.urls objectForKey:DkTURLKey]) )
+     {
+     [self menuForIndexPath:indexPath];
+     return;
+     }*/
     
     else {
         
         if([self connectivityStatus])
         {
-            
-            UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
             MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:cell.contentView animated:YES];
             hud.color = [UIColor clearColor];
             
@@ -503,12 +543,10 @@ typedef enum {
             [[PACERClient sharedClient] retrieveDocument:entry sender:self docket:self.docket];
             
         }
-       
+        
     }
-    return;
-    
-}
 
+}
 /*
 -(void) menuForIndexPath:(NSIndexPath *)indexPath
 {
@@ -573,12 +611,21 @@ typedef enum {
     UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:[self.filteredEntries indexOfObject:entry] inSection:0]];
     [MBProgressHUD hideAllHUDsForView:cell.contentView animated:YES];
     //handle a downloaded document
-    
     //path: local path of the file
     //entry: a docket entry object corresponding to the docket entry
     
+    //Case One: E-mailing docket entry with attachment
+    if(self.mode == DkTTableViewSelectionEmail && self.activeEntry == entry) {
+        self.activeEntry = nil;
+        [self emailDocketItem:entry attachmentPath:path];
+        self.mode = DkTTableViewSelectionModeNone;
+        return;
+    }
+    
+    //Case Two: Anything else
     if(self.activeEntry == entry)
     {
+        self.activeEntry = nil;
         ReaderDocument *readerDocument = [[ReaderDocument alloc] initWithFilePath:path password:nil];
         
         if(readerDocument == nil)
@@ -618,7 +665,7 @@ typedef enum {
             [vc.view removeFromSuperview];
         }
         
-        self.detailViewController.title = [NSString stringWithFormat:@"Entry #%d", entry.entryNumber.intValue];
+        self.detailViewController.title = [NSString stringWithFormat:@"Entry #%@", entry.entryString];
         [self.detailViewController addChildViewController:pdfReader];
         [self.detailViewController.view addSubview:pdfReader.view];
         [self.detailViewController setDocketEntry:entry];
@@ -635,18 +682,23 @@ typedef enum {
         }
     }
     
-    
-    
 }
 
 -(void) handleDocumentsFromDocket:(DkTDocket *)docket entry:(DkTDocketEntry *)entry entries:(NSArray *)entries
 {
+    if(self.mode == DkTTableViewSelectionEmail && self.activeEntry == entry) {
+        [self emailDocketItem:entry attachmentPath:nil];
+        self.mode = DkTTableViewSelectionModeNone;
+        self.activeEntry = nil;
+        return;
+    }
+    
     
     UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:[self.filteredEntries indexOfObject:entry] inSection:0]];
     [MBProgressHUD hideAllHUDsForView:cell.contentView animated:YES];
     
     DkTDocketTableViewController *nextController = [[DkTDocketTableViewController alloc] init];
-    nextController.title = [NSString stringWithFormat:@"Entry #%d", entry.entryNumber.intValue];
+    nextController.title = [NSString stringWithFormat:@"Entry #%@", entry.entryString];
     nextController.docketEntries = entries;
     nextController.root = NO;
     nextController.docket = self.docket;
@@ -657,6 +709,9 @@ typedef enum {
 
 -(void) handleSealedDocument:(DkTDocketEntry *)entry
 {
+    self.mode = DkTTableViewSelectionModeNone;
+    self.activeEntry = nil;
+    
     UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:[self.filteredEntries indexOfObject:entry] inSection:0]];
     
     [MBProgressHUD hideAllHUDsForView:cell.contentView animated:YES];
@@ -682,7 +737,7 @@ typedef enum {
 
 -(void) handleDocketEntryError:(DkTDocketEntry *)entry
 {
-    
+    self.activeEntry = nil;
     UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:[self.filteredEntries indexOfObject:entry] inSection:0]];
     [MBProgressHUD hideAllHUDsForView:cell.contentView animated:YES];
     
@@ -970,7 +1025,7 @@ typedef enum {
 {
     
     CGRect bbFrame = CGRectMake(0, 0, kToolbarIconSize.width*.9, kToolbarIconSize.height*.9);
-    UIImage *docketImage = [[DkTImageCache sharedCache] imageNamed:@"docketAdd" color:[UIColor inactiveColor]];
+    UIImage *docketImage = [[DkTImageCache sharedCache] imageNamed:@"grid" color:[UIColor inactiveColor]];
     UIImage *bookmarkImage = [kBookmarkImage imageWithColor:[UIColor inactiveColor]];
     UIImage *backImage = [[DkTImageCache sharedCache] imageNamed:@"back" color:[UIColor inactiveColor]];
     
@@ -980,13 +1035,13 @@ typedef enum {
     UIBarButtonItem *backBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:backBarButton];
     self.navigationItem.leftBarButtonItem = backBarButtonItem;
     
-    //Batch Download
-    UIButton *downloadDocketButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    downloadDocketButton.frame = bbFrame;
-    [downloadDocketButton setBackgroundImage:docketImage forState:UIControlStateNormal];
-    [downloadDocketButton addTarget:self action:@selector(activateDownload) forControlEvents:UIControlEventTouchUpInside];
-    self.downloadDocketBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:downloadDocketButton];
-    downloadDocketButton.helpText = @"Download multiple documents from the docket.";
+    //Action Button
+    UIButton *actionButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    actionButton.frame = bbFrame;
+    [actionButton setBackgroundImage:docketImage forState:UIControlStateNormal];
+    [actionButton addTarget:self action:@selector(handleAction:) forControlEvents:UIControlEventTouchUpInside];
+    self.actionBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:actionButton];
+    actionButton.helpText = @"Open action menu.";
     
     //Bookmark button
     
@@ -1001,10 +1056,10 @@ typedef enum {
         [bookmarkButton addTarget:self action:@selector(bookmarkDocket) forControlEvents:UIControlEventTouchUpInside];
         UIBarButtonItem *bookmarkBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:bookmarkButton];
         bookmarkButton.helpText = @"Bookmark the docket.";
-        self.navigationItem.rightBarButtonItems = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? @[self.downloadDocketBarButtonItem, bookmarkBarButtonItem] : @[space, self.downloadDocketBarButtonItem, bookmarkBarButtonItem];
+        self.navigationItem.rightBarButtonItems = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? @[self.actionBarButtonItem, bookmarkBarButtonItem] : @[space, self.actionBarButtonItem, bookmarkBarButtonItem];
     }
     
-    else self.navigationItem.rightBarButtonItems =  (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? @[self.downloadDocketBarButtonItem] : @[space, self.downloadDocketBarButtonItem];
+    else self.navigationItem.rightBarButtonItems =  (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? @[self.actionBarButtonItem] : @[space, self.actionBarButtonItem];
   
     if(self.isRoot) self.title = @"Docket";
     
@@ -1164,9 +1219,7 @@ typedef enum {
 
 -(void) handleDoubleSwipeDown:(UISwipeGestureRecognizer *)sender { self.direction = UISwipeGestureRecognizerDirectionDown; }
 
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
-{
-    return YES;
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer { return YES;
 }
 
 -(void) handleLongPress:(UIGestureRecognizer *)sender
@@ -1220,5 +1273,117 @@ typedef enum {
     return cellHeight + (size.height - textHeight);
 }
 
+-(void) handleAction:(id)sender {
+    
+    RNGridMenuItem *printItem = [[RNGridMenuItem alloc] initWithImage:[[DkTImageCache sharedCache] imageNamed:@"document" color:[UIColor inactiveColor]] title:@"PDF" action:^{
+        
+        NSString *path = [NSString stringWithFormat:@"%@%@.pdf", [DkTDocumentManager temporaryDocumentsDirectory],self.docket.name];
+        
+        [DkTDocketPrinter printDocket:self.docket entries:self.docketEntries toPath:path];
+        
+        ReaderDocument *readerDocument = [[ReaderDocument alloc] initWithFilePath:path password:nil];
+        ReaderViewController *pdfReader = [[ReaderViewController alloc] initWithReaderDocument:readerDocument];
+        pdfReader.view.frame = self.detailViewController.view.frame;
+        for(UIViewController *vc in self.detailViewController.childViewControllers)
+        {
+            [vc removeFromParentViewController];
+            [vc.view removeFromSuperview];
+        }
+        
+        self.detailViewController.title = self.docket.name;
+        [self.detailViewController addChildViewController:pdfReader];
+        [self.detailViewController.view addSubview:pdfReader.view];
+        [self.detailViewController setFilePath:path];
+        
+    }];
+
+    
+    RNGridMenuItem *emailDocketItem = [[RNGridMenuItem alloc] initWithImage:[[DkTImageCache sharedCache] imageNamed:@"mail" color:[UIColor inactiveColor]] title:@"Email Item" action:^{
+        
+        self.mode = DkTTableViewSelectionEmail;
+    }];
+    
+    
+    RNGridMenuItem *downloadDocketItem = [[RNGridMenuItem alloc] initWithImage:[[DkTImageCache sharedCache] imageNamed:@"docketAdd" color:[UIColor inactiveColor]] title:@"Batch" action:^{
+        
+        [self activateDownload];
+        
+    }];
+    
+
+    RNGridMenu *menu = [[RNGridMenu alloc] initWithItems:[MFMailComposeViewController canSendMail] ? @[printItem, emailDocketItem, downloadDocketItem] : @[printItem, downloadDocketItem]];
+    menu.delegate = self;
+    menu.blurLevel = .5;
+    menu.highlightColor = [UIColor activeColorLight];
+    menu.backgroundColor = [UIColor activeColor];
+    [menu showInViewController:self.parentViewController center:self.parentViewController.view.center];
+}
+
+- (void)gridMenu:(RNGridMenu *)gridMenu willDismissWithSelectedItem:(RNGridMenuItem *)item atIndex:(NSInteger)itemIndex {
+    
+    if(itemIndex == 1) {
+        DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"E-mail Docket Item" andMessage:@"Select an entry to e-mail."];
+        
+        [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+            
+            [alertView dismissAnimated:YES];
+        }];
+        
+        [alertView show];
+
+    }
+    
+}
+
+-(void) emailDocketItem:(DkTDocketEntry *)entry attachmentPath:(NSString *)path {
+    
+    self.activeEntry = nil;
+    [self.tableView deselectRowAtIndexPath:[NSIndexPath indexPathForRow:[self.filteredEntries indexOfObject:entry] inSection:0] animated:NO];
+    if([MFMailComposeViewController canSendMail])
+    {
+        MFMailComposeViewController *mailVC = [[MFMailComposeViewController alloc] init];
+        
+        
+        mailVC.title = self.title;
+        NSString *subject = [NSString stringWithFormat:@"%@ - %@", entry.docket.name, entry.entryNumber];
+        [mailVC setMessageBody:entry.summary isHTML:YES];
+        
+        if([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            NSData *data = [NSData dataWithContentsOfFile:path];
+            NSString *fileName = [NSString stringWithFormat:@"%@ - %@.pdf", entry.docket.name, entry.entryNumber];
+            [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:fileName];
+            
+        }
+        
+        
+        [mailVC setSubject:subject];
+        [mailVC.navigationBar setTitleTextAttributes:@{UITextAttributeTextColor:[UIColor inactiveColor]}];
+        [mailVC.navigationBar setTintColor:[UIColor inactiveColor]];
+        
+        
+        for(UINavigationItem *i in mailVC.navigationBar.items)
+        {
+            
+            IOS7([i.leftBarButtonItem setTintColor:[UIColor whiteColor]];
+                 [i.rightBarButtonItem setTintColor:[UIColor whiteColor]];
+                 [i.backBarButtonItem setTintColor:[UIColor whiteColor]];, )
+            
+        }
+        
+        mailVC.mailComposeDelegate = self;
+        
+        [self presentViewController:mailVC animated:YES completion:^{
+            
+        }];
+    }
+    
+}
+
+- (void) mailComposeController:(MFMailComposeViewController *)controller didFinishWithResult:(MFMailComposeResult)result error:(NSError *)error
+{
+    [self dismissViewControllerAnimated:YES completion:^{
+        
+    }];
+}
 
 @end

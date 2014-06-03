@@ -22,9 +22,21 @@ NSString* const DkTCodePACERSearchKey;
 NSString* const DkTCodePACERDisplayKey;
 
 @interface DkTCodeManager : NSObject
+
+/**
+ Return singleton object
+ */
 +(id) sharedManager;
+
+/**
+ Return an array of values that matches a key and bitmask type variable
+ */
 +(NSArray *) valuesForKey:(NSString *)key types:(DkTCodeType)type;
 +(NSArray *) valuesForKey:(NSString *)key type:(DkTCodeType)type;
+
+/**
+ Convert a code from one format to another (e.g., bluebook --> pacer)
+ */
 +(NSString *)translateCode:(NSString *)code inputFormat:(NSString *)input outputFormat:(NSString *)output;
 +(NSString *)translateCode:(NSString *)code inputFormat:(NSString *)input outputFormat:(NSString *)output type:(DkTCodeType)type;
 @end

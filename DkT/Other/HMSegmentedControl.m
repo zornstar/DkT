@@ -240,7 +240,7 @@
         NSInteger segment = touchLocation.x / self.segmentWidth;
         
         if (segment != self.selectedSegmentIndex) {
-            [self setSelectedSegmentIndex:segment animated:NO /*change mz */ notify:YES];
+            [self setSelectedSegmentIndex:segment animated:NO /*mz change*/ notify:YES];
         }
     }
 }

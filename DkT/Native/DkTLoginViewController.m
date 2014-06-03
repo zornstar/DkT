@@ -422,7 +422,7 @@
     NSMutableArray *recentSessions = [NSMutableArray array];
     NSArray *sessions = [[DkTSessionManager sharedManager] sessions];
     
-    int max = MIN(sessions.count, 4);
+    NSInteger max = MIN(sessions.count, 4);
     int i;
     
     for(i = 0; i < max; i++)

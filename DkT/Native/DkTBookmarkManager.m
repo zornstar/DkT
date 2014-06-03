@@ -61,8 +61,13 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     return [DkTDocumentManager docketsFolder];
 }
 
-+(NSString *) bookmarkPath:(DkTDocket *)docket {
+-(NSString *) bookmarkPath:(DkTDocket *)docket {
     return [NSString stringWithFormat:@"%@/%@-%@.%@", [DkTBookmarkManager bookmarkFolder],docket.case_num,docket.court,@"xml"];
+}
+
+-(void) write {
+    GDataXMLDocument *doc = [self document];
+    [doc.rootElement.XMLString writeToFile:self.filePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
 }
 
 -(GDataXMLElement *) elementWithDocketEntry:(DkTDocketEntry *)entry
@@ -103,20 +108,8 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     
     return entryElement;
 }
--(void) addBookmark:(DkTDocket *)item
-{
-    
-    GDataXMLDocument *doc = [self document];
-    
-    NSArray *children = [doc.rootElement children];
-    
-    for(GDataXMLElement *child in children)
-    {
-        GDataXMLElement *uElement = [[child elementsForName:@"url"] lastObject];
-        
-        if([item.link isEqualToString:uElement.stringValue]) return;
-    }
-    
+
+-(GDataXMLElement *) elementWithDocket:(DkTDocket *)item {
     
     GDataXMLElement *bookmark = [GDataXMLElement elementWithName:@"bookmark"];
     GDataXMLElement *case_num = [GDataXMLElement elementWithName:@"case_num" stringValue:item.case_num];
@@ -134,6 +127,74 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     [bookmark addChild:courtElement];
     [bookmark addChild:dateElement];
     [bookmark addChild:updateElement];
+    return bookmark;
+}
+
+-(DkTDocket *) docketWithElement:(GDataXMLElement *)element {
+    
+    DkTDocket *item = [[DkTDocket alloc] init];
+    NSArray *children = [element children];
+    
+    if(children.count > 0)
+    {
+        for(GDataXMLElement *property in children)
+        {
+            if ([property.name isEqualToString:@"case_num"])
+            {
+                item.case_num = property.stringValue;
+            }
+            
+            else if ([property.name isEqualToString:@"cs_caseid"])
+            {
+                item.cs_caseid = property.stringValue;
+            }
+            
+            else if([property.name isEqualToString:@"name"])
+            {
+                item.name = property.stringValue;
+            }
+            
+            else if ([property.name isEqualToString:@"url"])
+            {
+                item.link = property.stringValue;
+            }
+            
+            else if ([property.name isEqualToString:@"court"])
+            {
+                item.court = property.stringValue;
+            }
+            
+            else if ([property.name isEqualToString:@"date"])
+            {
+                item.date = property.stringValue;
+            }
+            
+            else if ([property.name isEqualToString:@"updated"])
+            {
+                item.updated = property.stringValue;
+            }
+            
+        }
+    }
+    return item;
+
+}
+-(GDataXMLDocument *) addBookmark:(DkTDocket *)item
+{
+    
+    GDataXMLDocument *doc = [self document];
+    
+    NSArray *children = [doc.rootElement children];
+    
+    for(GDataXMLElement *child in children)
+    {
+        GDataXMLElement *uElement = [[child elementsForName:@"url"] lastObject];
+        
+        if([item.link isEqualToString:uElement.stringValue]) return doc;
+    }
+    
+    
+    GDataXMLElement *bookmark = [self elementWithDocket:item];
     
     [doc.rootElement addChild:bookmark];
     [doc.rootElement.XMLString writeToFile:self.filePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
@@ -142,6 +203,41 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     {
         [self.delegate didAddBookmark:item];
     }
+    
+    return doc;
+}
+
+-(void) moveBookmark:(DkTDocket *)item toIndex:(NSUInteger)index {
+    
+    GDataXMLDocument *doc = [self document];
+    NSMutableArray *children = [[doc.rootElement children] mutableCopy];
+    
+    BOOL notFound = TRUE;
+    
+    for(int j = 0; j < children.count; ++j)
+    {
+        GDataXMLElement *child = [children objectAtIndex:j];
+        GDataXMLElement *uElement = [[child elementsForName:@"url"] lastObject];
+        
+        if([item.link isEqualToString:uElement.stringValue]) {
+            [children removeObjectAtIndex:j];
+            [children insertObject:child atIndex:index];
+            notFound = FALSE;
+            break;
+        }
+    }
+    
+    if(notFound) return;
+    
+
+    GDataXMLElement *root = [GDataXMLElement elementWithName:@"bookmarks"];
+    
+    for(GDataXMLElement *child in children) {
+        [root addChild:child];
+    }
+    
+    [root.XMLString writeToFile:self.filePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    
 }
 
 -(void) create
@@ -154,7 +250,7 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
 -(BOOL) deleteBookmark:(DkTDocket *)item
 {
     
-    if([[NSFileManager defaultManager] removeItemAtPath:[DkTBookmarkManager bookmarkPath:item] error:nil]) {
+    if([[NSFileManager defaultManager] removeItemAtPath:[self bookmarkPath:item] error:nil]) {
         
         GDataXMLDocument *doc = [self document];
         
@@ -189,52 +285,8 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     
     for(GDataXMLElement *bookmark in bookmarks)
     {
-        DkTDocket *item = [[DkTDocket alloc] init];
-        NSArray *children = [bookmark children];
-        
-        if(children.count > 0)
-        {
-            for(GDataXMLElement *property in children)
-            {
-                if ([property.name isEqualToString:@"case_num"])
-                {
-                    item.case_num = property.stringValue;
-                }
-                
-                else if ([property.name isEqualToString:@"cs_caseid"])
-                {
-                    item.cs_caseid = property.stringValue;
-                }
-                
-                else if([property.name isEqualToString:@"name"])
-                {
-                    item.name = property.stringValue;
-                }
-                
-                else if ([property.name isEqualToString:@"url"])
-                {
-                    item.link = property.stringValue;
-                }
-                
-                else if ([property.name isEqualToString:@"court"])
-                {
-                    item.court = property.stringValue;
-                }
-                
-                else if ([property.name isEqualToString:@"date"])
-                {
-                    item.date = property.stringValue;
-                }
-                
-                else if ([property.name isEqualToString:@"updated"])
-                {
-                    item.updated = property.stringValue;
-                }
-                
-            }
-            
-            [items addObject:item];
-        }
+        DkTDocket *item = [self docketWithElement:bookmark];
+        [items addObject:item];
         
     }
     
@@ -284,7 +336,7 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
         [[NSFileManager defaultManager] createDirectoryAtPath:[DkTBookmarkManager bookmarkFolder] withIntermediateDirectories:NO attributes:nil error:nil];
     }
     
-    NSString *path = [DkTBookmarkManager bookmarkPath:docket];
+    NSString *path = [self bookmarkPath:docket];
     
     [root.XMLString writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
     
@@ -296,7 +348,7 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     @autoreleasepool {
         
         
-        NSString *path = [DkTBookmarkManager bookmarkPath:docket];
+        NSString *path = [self bookmarkPath:docket];
         
         NSData *data = [[NSData alloc] initWithContentsOfFile:path];
         
@@ -417,7 +469,7 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     [dateFormatter setTimeStyle:NSDateFormatterNoStyle];
     [dateFormatter setDateFormat:@"MM/dd/yyyy"];
     
-    NSString *path = [DkTBookmarkManager bookmarkPath:docket];
+    NSString *path = [[DkTBookmarkManager sharedManager] bookmarkPath:docket];
     
     NSData *data = [[NSData alloc] initWithContentsOfFile:path];
     
@@ -491,13 +543,15 @@ NSString* const DkTBookmarkDocketEntriesKey = @"entries";
     }
 }
 
+#pragma mark - PACERClientProtocol
+
 -(void) handleDocket:(DkTDocket *)docket entries:(NSArray *)entries to:(NSString *)to from:(NSString *)from
 {
     NSInteger n = [[DkTBookmarkManager sharedManager] appendEntries:entries toSavedDocket:docket];
     
     if([self.delegate respondsToSelector:@selector(addBadgeToDocket:number:)])
     {
-        [self.delegate addBadgeToDocket:docket number:n];
+        [self.delegate addBadgeToDocket:docket number:(int)n];
     }
 }
 @end

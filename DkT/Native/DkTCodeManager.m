@@ -12,6 +12,7 @@ NSString* const DkTCodePACERSearchKey = @"pacer_search_code";
 NSString* const DkTCodePACERDisplayKey = @"pacer_display_code";
 NSString* const DkTCodeTypeKey = @"type";
 
+
 @interface DkTCodeManager ()
 
 @property (nonatomic, strong) NSArray *codes;
@@ -132,7 +133,7 @@ NSString* const DkTCodeTypeKey = @"type";
               DkTCodeMake(@"Ninth Circuit", @"9th Cir.", @"09",@"09cae",(DkTCodeTypeAppellateCourt | DkTCodeTypeRegion)),
               DkTCodeMake(@"Tenth Circuit", @"10th Cir.", @"10",@"10cae", (DkTCodeTypeAppellateCourt | DkTCodeTypeRegion)),
               DkTCodeMake(@"Eleventh Circuit", @"11th Cir.", @"11",@"11cae", (DkTCodeTypeAppellateCourt | DkTCodeTypeRegion)),
-              DkTCodeMake(@"D.C. Circuit", @"D.C. Cir.", @"dc",@"cadc", DkTCodeTypeAppellateCourt),
+              DkTCodeMake(@"D.C. Circuit", @"D.C. Cir.", @"DC",@"dccae", DkTCodeTypeAppellateCourt),
               DkTCodeMake(@"Federal Circuit", @"Fed. Cir.", @"CAFC",@"cafc", DkTCodeTypeAppellateCourt),
               DkTCodeMake(@"First Circuit", @"B.A.P. 1st Cir.", @"01",@"01bap", DkTCodeTypeBankruptcyAppellateCourt),
               DkTCodeMake(@"Second Circuit", @"B.A.P. 2d Cir.", @"02",@"02bap", DkTCodeTypeBankruptcyAppellateCourt),
@@ -421,7 +422,7 @@ NSString* const DkTCodeTypeKey = @"type";
               DkTCodeMake(@"Alabama Southern", @"S.D. Ala.", @"als", @"alsdce", DkTCodeTypeDistrictCourt),
               
               //Arkansas
-              DkTCodeMake(@"Arkansas Eastern", @"E.D. Ark.", @"ake", @"aredce", DkTCodeTypeDistrictCourt),
+              DkTCodeMake(@"Arkansas Eastern", @"E.D. Ark.", @"are", @"aredce", DkTCodeTypeDistrictCourt),
               DkTCodeMake(@"Arkansas Western", @"W.D. Ark.", @"arw", @"arwdce", DkTCodeTypeDistrictCourt),
               
               //California

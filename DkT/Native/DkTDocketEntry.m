@@ -72,6 +72,7 @@ NSString * const kWriteableProperties[] = {
 
 -(NSAttributedString *) renderSummary
 {
+    NSLog(@"%@", self.entryNumber);
     NSMutableAttributedString *returnStr = [[NSMutableAttributedString alloc] initWithString:@""];
     
     NSString *string = [self.summary stringByReplacingOccurrencesOfString:@"&amp;" withString:@"&"];
@@ -82,7 +83,6 @@ NSString * const kWriteableProperties[] = {
     scanner.charactersToBeSkipped = NULL;
     NSString *tempText = nil;
     NSString *tagText = nil;
-    
     if([self.summary characterAtIndex:0] == '<')
     {
         [scanner scanUpToString:@">" intoString:nil];
@@ -93,7 +93,6 @@ NSString * const kWriteableProperties[] = {
     {
         [scanner scanUpToString:@"<" intoString:&tempText];
         
-        
         if (tempText != nil)
         {
             
@@ -103,11 +102,9 @@ NSString * const kWriteableProperties[] = {
             if ([scanner isAtEnd]) break;
             
             [scanner setScanLocation:[scanner scanLocation] + 1];
-            
-            if([self.summary characterAtIndex:[scanner scanLocation]] == 'a')
+            if(([self.summary characterAtIndex:scanner.scanLocation-1] == '<') && ([self.summary characterAtIndex:[scanner scanLocation]] == 'a'))
             {
                 [scanner scanUpToString:@">" intoString:nil];
-                
                 [scanner setScanLocation:[scanner scanLocation] + 1];
                 [scanner scanUpToString:@"</a>" intoString:&tagText];
                 
@@ -171,7 +168,7 @@ NSString * const kWriteableProperties[] = {
 
 -(NSString *)fileName
 {
-    NSString *filename = [NSString stringWithFormat:@"Entry #%d.pdf", self.entryNumber.intValue];
+    NSString *filename = [NSString stringWithFormat:@"Entry #%@.pdf", self.entryString];
     return filename;
 }
 

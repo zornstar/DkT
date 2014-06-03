@@ -6,7 +6,7 @@
 #import <Foundation/Foundation.h>
 #import "PACERClient.h"
 
-@class DkTDocket;
+@class DkTDocket, GDataXMLDocument, GDataXMLElement;
 
 @protocol DkTBookmarkManagerDelegate <NSObject>
 
@@ -25,17 +25,24 @@ extern NSString* const DkTBookmarkDocketEntriesKey;
 @property (nonatomic, weak) id<DkTBookmarkManagerDelegate> delegate;
 
 -(id) initWithBookmarkFile:(NSString *)filePath;
+
+
 +(id) sharedManager;
 +(NSString *)bookmarkFolder;
-
--(void) addBookmark:(DkTDocket *)item;
+-(GDataXMLDocument *)document;
+-(GDataXMLDocument *) addBookmark:(DkTDocket *)item;
 -(BOOL) updateBookmark:(DkTDocket *)item;
 -(void) updateBookmarks:(NSArray *)items;
 -(BOOL) deleteBookmark:(DkTDocket *)item;
+-(void) moveBookmark:(DkTDocket *)item toIndex:(NSUInteger)index;
 -(NSArray *)bookmarks;
+-(void) write;
 -(NSArray *)savedDocket:(DkTDocket *)docket;
 -(void) bookmarkDocket:(DkTDocket *)docket withDocketEntries:(NSArray *)docketEntries;
 -(NSInteger) appendEntries:(NSArray *)entries toSavedDocket:(DkTDocket *)docket;
+-(GDataXMLElement *) elementWithDocket:(DkTDocket *)item;
+-(DkTDocket *) docketWithElement:(GDataXMLElement *)element;
+-(NSString *) bookmarkPath:(DkTDocket *)docket;
 //-(NSString *) drawDocketSheet:(DkTDocket *)docket;
 
 

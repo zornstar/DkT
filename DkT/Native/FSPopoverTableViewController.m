@@ -123,7 +123,7 @@
 {
     if(self.selectionBlock)
     {
-        self.selectionBlock(indexPath.row);
+        self.selectionBlock((int)indexPath.row);
     }
     
     [self hide];

@@ -59,10 +59,7 @@
     }
 }
 
--(void) performAction:(id)sender
-{
-    _selectionBlock();
-}
+-(void) performAction:(id)sender { _selectionBlock(); }
 
 -(void) setCornerRadius:(CGFloat)cornerRadius
 {
@@ -82,7 +79,6 @@
 -(void) setImageSize:(CGFloat)imageSize
 {
     CGFloat scale = self.titleLabel.font.pointSize / self.imageView.frame.size.height;
-    
     self.imageView.transform = CGAffineTransformMakeScale(imageSize * scale, imageSize * scale);
 }
 

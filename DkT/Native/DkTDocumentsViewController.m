@@ -272,10 +272,8 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
 
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-    int n = self.dockets.count;
-    
+    NSInteger n = self.dockets.count;
     self.noDocumentLabel.hidden = (n > 0);
-    
     return n;
 }
 - (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section

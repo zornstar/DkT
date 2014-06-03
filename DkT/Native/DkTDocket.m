@@ -50,6 +50,8 @@ NSString* decodeFromPercentEscapeString(NSString *string) {
     
     if([self.court rangeOfString:DocketBankruptcyKey].location != NSNotFound) return DocketTypeBankruptcy;
     
+    if([self.court rangeOfString:@"dccae"].location != NSNotFound) return DocketTypeAppellate; //important: must come before district otherwise dc circuit will return as district court
+    
     if([self.court rangeOfString:DocketDistrictKey].location != NSNotFound) return DocketTypeDistrict; //important: must come before appellate otherwise california district courts will return as appellate courts
     
     if([self.court rangeOfString:DocketBankruptcyAppellateKey].location != NSNotFound) return DocketTypeAppellate;
@@ -68,10 +70,7 @@ NSString* decodeFromPercentEscapeString(NSString *string) {
     return DocketTypeNone;
 }
 
--(NSString *)courtLink
-{
-    return [NSString stringWithFormat:@"https://ecf.%@.uscourts.gov/",self.shortCourt];
-}
+-(NSString *)courtLink { return [NSString stringWithFormat:@"https://ecf.%@.uscourts.gov/",self.shortCourt]; }
 
 -(NSString *) shortCourt
 {
@@ -80,6 +79,7 @@ NSString* decodeFromPercentEscapeString(NSString *string) {
     switch (self.type) {
         case DocketTypeAppellate: {
             if([self.court rangeOfString:@"fc"].location != NSNotFound) str = @"cafc";
+            else if([self.court rangeOfString:@"dc"].location != NSNotFound) str = @"cadc";
             else str = [NSString stringWithFormat:@"ca%d",[[self.court substringToIndex:2] intValue]];
         }
             break;
@@ -137,10 +137,7 @@ NSString* decodeFromPercentEscapeString(NSString *string) {
     return array;
 }
 
--(NSString *)encodedName
-{
-    return encodeToPercentEscapeString(self.name);
-}
+-(NSString *)encodedName { return encodeToPercentEscapeString(self.name); }
 
 + (NSArray *)criminalKeys
 {

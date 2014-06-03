@@ -18,6 +18,7 @@
     
     return self;
 }
+
 - (void)setButtonColor:(UIColor *)buttonColor
 {
     if (_buttonColor == buttonColor) {
@@ -55,9 +56,7 @@
 	[button setTitle:title forState:UIControlStateNormal];
     [button setTitleColor:[UIColor colorWithWhite:0.4 alpha:1] forState:UIControlStateNormal];
     [button setTitleColor:[UIColor colorWithWhite:0.4 alpha:0.8] forState:UIControlStateHighlighted];
-    
 	[button addTarget:self action:@selector(buttonAction:) forControlEvents:UIControlEventTouchUpInside];
-    
     
     return button;
 }

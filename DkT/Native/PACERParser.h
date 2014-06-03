@@ -18,9 +18,9 @@
 //+(float) parseHtmlStringForCost:(NSString *)htmlString;
 +(NSString *) pdfURLForDownloadDocument:(NSData *)data;
 +(NSArray *) parseDocket:(DkTDocket *)docket html:(NSData *)data;
++(NSString *)parseMore:(NSData *)data docket:(DkTDocket *)docket;
 +(NSString *)parseDocketSheet:(NSData *)html courtType:(PACERCourtType)type;
 +(BOOL) parseLogin:(NSData *)html; +(BOOL) isLoggedIn:(NSData *)html;
 +(NSArray *)parseMultiDoc:(DkTDocketEntry *)entry html:(NSData *)html;
 +(void) parseAppellateCaseSelectionPage:(NSData *)html withDocket:(DkTDocket *)docket completion:(void (^)(NSString *cs_caseid))completion;
-
 @end

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PreferenceSpecifiers</key>
+	<array>
+		<dict>
+			<key>FooterText</key>
+			<string>
+Icons from the free Gemicon set by Turqois.</string>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+		</dict>
+        <dict>
+			<key>FooterText</key>
+			<string>
+MIT License: http://opensource.org/licenses/mit-license.php
+·  SSKeychain (Sam Soffes)
+·  UIActivity+Blocks (Ryu Iwasaki)
+·  TFHpple (TopFunky)
+·  JRSwizzle (Jonathan &apos;Wolf&apos; Rentzsch)
+·  HMSegmentedControl (Hesham Abd-Elmegid)
+·  PKRevealController (Philip Kluz)
+·  Vfr (Julius Oklamcak)
+·  MBProgressHUD (Matej Bukovinski)
+·  SIAlertView (Sumi Interactive)
+·  MJPopupViewController (Martin Juhasz)
+·  AFNetworking (Mattt Thompson)
+·  SVPullToRefresh (Sam Vermette)
+·  RNGridMenu (Ryan Nystrom)
+·  PSMenuItem (Peter Steinberger)
+·  CKCalendarView (Jason Kozemczak)</string>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+		</dict>
+		<dict>
+			<key>FooterText</key>
+			<string>
+BSD 3-Clause License: http://opensource.org/licenses/BSD-3-Clause
+·  MBSwitch (Mathieu Bolard)
+·  UIControl+Blocks (Hypercrypt Solutions Ltd.)
+·  Objective-Zip (Flying Dolphin Studio)</string>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+		</dict>
+        <dict>
+			<key>FooterText</key>
+			<string>
+GData.framework is developed by Google and licensed under the following Apache License:
+                
+Copyright (c) 2007 Google Inc.
+                
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+                
+http://www.apache.org/licenses/LICENSE-2.0
+                
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.</string>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+		</dict>
+        <dict>
+			<key>FooterText</key>
+			<string>
+iRate by Nick Lockwood
+Distributed under the permissive zlib license
+            </string>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+		</dict>
+        <dict>
+			<key>FooterText</key>
+			<string>
+HTML Tidy
+HTML parser and pretty printer
+                
+Copyright (c) 1998-2003 World Wide Web Consortium
+(Massachusetts Institute of Technology, European Research
+Consortium for Informatics and Mathematics, Keio University).
+All Rights Reserved.
+                
+This software and documentation is provided "as is," and
+the copyright holders and contributing author(s) make no
+representations or warranties, express or implied, including
+but not limited to, warranties of merchantability or fitness
+for any particular purpose or that the use of the software or
+documentation will not infringe any third party patents,
+copyrights, trademarks or other rights.
+                
+The copyright holders and contributing author(s) will not be held
+liable for any direct, indirect, special or consequential damages
+arising out of any use of the software or documentation, even if
+advised of the possibility of such damage.
+                
+Permission is hereby granted to use, copy, modify, and distribute
+this source code, or portions hereof, documentation and executables,
+for any purpose, without fee, subject to the following restrictions:
+                
+1. The origin of this source code must not be misrepresented.
+2. Altered versions must be plainly marked as such and must
+not be misrepresented as being the original source.
+3. This Copyright notice may not be removed or altered from any
+source or altered source distribution.
+                
+The copyright holders and contributing author(s) specifically
+permit, without fee, and encourage the use of this source code
+as a component for supporting the Hypertext Markup Language in
+commercial products. If you use this source code in a product,
+acknowledgment is not required but would be appreciated.</string>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+		</dict>
+        <dict>
+			<key>FooterText</key>
+			<string>
+TDBadgedCell
+Please attribute use of this code within your application
+Any Queries should be directed to hi@tmdvs.me | http://www.tmdvs.me
+Copyright 2011 Tim Davies. All rights reserved.</string>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+		</dict>
+	</array>
+	<key>StringsTable</key>
+	<string>Root</string>
+</dict>
+</plist>

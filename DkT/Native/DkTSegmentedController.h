@@ -8,6 +8,10 @@
 
 #import <Foundation/Foundation.h>
 
-@interface SegmentedController : NSObject
+@interface DkTSegmentedController : UIViewController
+
+@property (nonatomic, retain, readonly) NSArray * viewControllers;
+@property (nonatomic, retain, readonly) UIViewController * currentViewController;
+
 
 @end

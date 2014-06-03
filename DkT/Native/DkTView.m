@@ -17,16 +17,12 @@
     return self;
 }
 
--(BOOL) canBecomeFirstResponder
-{
-    return YES;
-}
+-(BOOL) canBecomeFirstResponder { return YES; }
 
 -(BOOL) canPerformAction:(SEL)action withSender:(id)sender
 {
     
     NSString *selectorString = NSStringFromSelector(action);
-    
     return ([selectorString rangeOfString:@"ps_"].location != NSNotFound);
     
 }

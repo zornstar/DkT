@@ -118,11 +118,11 @@ float floatForEntry (id obj)
     
     NSString *s1 = [[obj objectForKey:DkTFileEntryKey] lastPathComponent];
     
-    int s = [s1 rangeOfString:@"#"].location+1;
+    NSInteger s = [s1 rangeOfString:@"#"].location+1;
     
     float n;
     
-    int e = [s1 rangeOfString:@").pdf"].location;
+    NSInteger e = [s1 rangeOfString:@").pdf"].location;
     
     if(e != NSNotFound)
     {
@@ -437,8 +437,7 @@ float floatForEntry (id obj)
     CGContextStrokeRect(context, border);
     CGContextEndPage(context);
     
-    
-    if((options & DkTBatchOptionsTOC) != 0) TableOfContents(context, tempFiles);
+    if((options & DkTBatchOptionsTOC) != 0) DrawTableOfContents(context, tempFiles);
     
     NSInteger pageCounter = 1;
     
@@ -459,7 +458,7 @@ float floatForEntry (id obj)
         CGRect entryFrame = CGRectMake(0, 450, 600, 100);
         CGMutablePathRef entryPath = CGPathCreateMutable();
         CGPathAddRect(entryPath, NULL, entryFrame);
-        NSString *slipString = [NSString stringWithFormat:(numberOfPages > 1) ? @"%@\n\n(%d pages)" : @"%@\n\n(%d page)", [fileName stringByDeletingPathExtension], numberOfPages];
+        NSString *slipString = [NSString stringWithFormat:(numberOfPages > 1) ? @"%@\n\n(%ld pages)" : @"%@\n\n(%ld page)", [fileName stringByDeletingPathExtension], (long)numberOfPages];
         CFStringRef entryStringRef = (__bridge CFStringRef)slipString;
         CFMutableAttributedStringRef entryText = CFAttributedStringCreateMutable(kCFAllocatorDefault, CFStringGetLength(entryStringRef));
         CFAttributedStringReplaceString(entryText, CFRangeMake(0, 0), entryStringRef);
@@ -527,8 +526,9 @@ float floatForEntry (id obj)
     
 }
 
-void TableOfContents(CGContextRef context, NSArray *files)
+void DrawTableOfContents(CGContextRef context, NSArray *files)
 {
+    //setup some initial style references
     CTTextAlignment center = kCTTextAlignmentCenter;
     CTParagraphStyleSetting centersettings[] = { {kCTParagraphStyleSpecifierAlignment, sizeof(center),&center} };
     CTParagraphStyleRef pstylecenter = CTParagraphStyleCreate(centersettings, sizeof(centersettings)/sizeof(centersettings[0]));
@@ -536,21 +536,21 @@ void TableOfContents(CGContextRef context, NSArray *files)
     CTFontRef stfont = CTFontCreateWithName((__bridge CFStringRef)(kContrastFont), 12, NULL);
     CTFontRef tfont = CTFontCreateWithName((__bridge CFStringRef)(kMainFont), 14, NULL);
     
+    //setup the drawing space
     CGRect mediaBox = CGRectMake(0, 0, 612, 792);
-    
-    
     CGRect tocFrame = CGRectMake(0, 650, 612, 100);
     CGMutablePathRef tocFramePath = CGPathCreateMutable();
     CGPathAddRect(tocFramePath, NULL, tocFrame);
+    
     CFRange currentRange = CFRangeMake(0, 0);
     
+    //draw table of contents
     NSString *toc = @"Table Of Contents"; CFStringRef tocRef = (__bridge CFStringRef)toc;
     
     CFMutableAttributedStringRef tocText = CFAttributedStringCreateMutable(kCFAllocatorDefault, CFStringGetLength(tocRef));
     CFAttributedStringReplaceString(tocText, CFRangeMake(0, 0), tocRef);
     CFAttributedStringSetAttribute(tocText, CFRangeMake(0, CFAttributedStringGetLength(tocText)), kCTParagraphStyleAttributeName, pstylecenter);
     CFAttributedStringSetAttribute(tocText, CFRangeMake(0, CFAttributedStringGetLength(tocText)), kCTFontAttributeName, font);
-    
     CTFramesetterRef tocFramesetter = CTFramesetterCreateWithAttributedString(tocText);
     CTFrameRef tocFrameRef = CTFramesetterCreateFrame(tocFramesetter, currentRange, tocFramePath, NULL);
     CGPathRelease(tocFramePath);
@@ -561,6 +561,7 @@ void TableOfContents(CGContextRef context, NSArray *files)
     CFRelease(tocText);
     CFRelease(tocFramesetter);
     
+    //draw the table headers
     CGRect stFrame = CGRectMake(10, 630, 70, 25);
     CGMutablePathRef stFramePath = CGPathCreateMutable();
     CGPathAddRect(stFramePath, NULL, stFrame);
@@ -608,17 +609,20 @@ void TableOfContents(CGContextRef context, NSArray *files)
     CFRelease(stFramesetter);
     CFRelease(stFrameRef);
 
+    //draw a line under the table headers
     CGContextSetStrokeColorWithColor(context, [UIColor activeColor].CGColor);
     CGPoint points[] = {CGPointMake(5,640),CGPointMake(607,640)};
     CGContextAddLines(context,points, 2);
     CGContextStrokePath(context);
     
-    CGFloat y = 635;
+
+    CGFloat y = 635; //set y to the top of the page
     NSInteger pageCounter = 1;
-    
     
     for(DkTFile *file in files)
     {
+        
+        //draw the summary
         
         CFStringRef nameString = (__bridge CFStringRef)[file objectForKey:DkTFileSummaryKey];
         CFMutableAttributedStringRef nameTextRef = CFAttributedStringCreateMutable(kCFAllocatorDefault, CFStringGetLength(nameString));
@@ -632,6 +636,8 @@ void TableOfContents(CGContextRef context, NSArray *files)
         
         CFRelease(nameTextRef);
         
+        //if we are at the bottom of the page, end the page and start a new one by resetting the y variable to the top of the page
+        
         if(y-height < 15)
         {
             CGContextEndPage(context);
@@ -640,6 +646,7 @@ void TableOfContents(CGContextRef context, NSArray *files)
             nameRect = CGRectMake(65, y-height, 475, height);
         }
         
+        //draw the file entry and the file path
         CGPathAddRect(nameFramePath, NULL, nameRect);
         CTFrameRef nameFrameRef = CTFramesetterCreateFrame(nameFrameSetter, currentRange, nameFramePath, NULL);
         CTFrameDraw(nameFrameRef, context);
@@ -666,7 +673,7 @@ void TableOfContents(CGContextRef context, NSArray *files)
         CFURLRef pdfURL = (__bridge_retained CFURLRef)[[NSURL alloc] initFileURLWithPath:[file objectForKey:DkTFilePathKey]];
         CGPDFDocumentRef pdfRef = CGPDFDocumentCreateWithURL((CFURLRef) pdfURL);
         NSInteger numberOfPages = CGPDFDocumentGetNumberOfPages(pdfRef);
-        CFStringRef pages = (__bridge CFStringRef)[NSString stringWithFormat:@"%d",pageCounter];
+        CFStringRef pages = (__bridge CFStringRef)[NSString stringWithFormat:@"%ld",(long)pageCounter];
         pageCounter += numberOfPages+1;
         CFRelease(pdfURL);
         CGPDFDocumentRelease(pdfRef);
@@ -728,7 +735,7 @@ void DrawPageNumber(CGContextRef context, NSInteger pageNumber, CTParagraphStyle
     CFRange currentRange = CFRangeMake(0, 0);
     CGMutablePathRef pageNumberPath = CGPathCreateMutable();
     CGPathAddRect(pageNumberPath, NULL, CGRectMake(20, 20, mediaBox.size.width-50, 20));
-    NSString *pageString = [NSString stringWithFormat:@"%d", pageNumber];
+    NSString *pageString = [NSString stringWithFormat:@"%ld", (long)pageNumber];
     CFStringRef pageStringRef = (__bridge CFStringRef)pageString;
     CFMutableAttributedStringRef pageText = CFAttributedStringCreateMutable(kCFAllocatorDefault, CFStringGetLength(pageStringRef));
     CFAttributedStringReplaceString(pageText, CFRangeMake(0, 0), pageStringRef);
@@ -779,7 +786,6 @@ void DrawPageNumber(CGContextRef context, NSInteger pageNumber, CTParagraphStyle
     
     return path;
 }
-/*iCloud*/
  
 
 @end

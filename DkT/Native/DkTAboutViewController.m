@@ -11,17 +11,10 @@
 
 @implementation DkTAboutViewController
 
-
 - (void)viewDidLoad
 {
     [super viewDidLoad];
 	[self setup];
-}
-
-- (void)didReceiveMemoryWarning
-{
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
 }
 
 

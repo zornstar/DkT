@@ -30,17 +30,15 @@
         
         self.masterViewController = [[DkTDocketTableViewController alloc] init];
         self.detailViewController = [[DkTDetailViewController alloc] init];
-        
+
+        //Choose our initial setup code based on the device.
+            //If Pad -> UISplitViewController
+            //If Pod -> PKRevealController
         self.baseViewController = PAD_OR_POD([self setupPad], [self setupPod]);
         
-        
-        
-        
+        //Do common setup
         [self commonSetup];
-        
         [self addChildViewController:self.baseViewController];
-        
-        
     }
     return self;
 }
@@ -51,7 +49,6 @@
     self.splitViewController = [[UISplitViewController alloc] init];
     UINavigationController *nav1 = [[UINavigationController alloc] initWithRootViewController:self.masterViewController];
     UINavigationController *nav2 = [[UINavigationController alloc] initWithRootViewController:self.detailViewController];
-    
     
     self.splitViewController.viewControllers = @[nav1, nav2];
     
@@ -79,10 +76,7 @@
     self.detailViewController.title = self.docket.name;
     self.detailViewController.docket = self.docket;
     self.detailViewController.filePath = nil;
-    
-   
     self.masterViewController.docket = _docket;
-    
     self.masterViewController.detailViewController = self.detailViewController;
 }
 

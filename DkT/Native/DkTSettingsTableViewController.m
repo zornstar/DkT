@@ -39,8 +39,8 @@
 -(void) setup
 {
     self.controls = @[[self switchWithKey:DkTSettingsAutoLoginKey], [self switchWithKey:DkTSettingsAddTOCKey], [self switchWithKey:DkTSettingsMostRecentKey]];
-    self.names = @[@"Auto Login on\nStart Up", @"Print Table of Contents in Bundle", @"Most Recent Docket Entries First"]; //, @"Auto-Login"];
-    self.descriptions = @[@"Automatically login as last user/client on startup", @"Add a Table of Contents and page numbers to docket bundles.", @"Display the most recent docket entries at the top of the docket list."]; //,@"Automatically login as the last user"];
+    self.names = @[@"Auto Login on\nStart Up", @"Print Table of Contents in Bundle", @"Most Recent Docket Entries First"];
+    self.descriptions = @[@"Automatically login as last user/client on startup", @"Add a Table of Contents and page numbers to docket bundles.", @"Display the most recent docket entries at the top of the docket list."];
     self.contentView = self.tableView;
 }
 
@@ -72,7 +72,8 @@
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+    _tableView = nil;
+    
 }
 
 -(UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -106,7 +107,7 @@
 {
     if(_tableView == nil)
     {
-        CGFloat x = CGRectGetMaxX(self.cell.frame)-2, y = CGRectGetMidY(self.cell.frame);
+        CGFloat x = CGRectGetMaxX(self.cell.frame)-2, y = 0;
         
         CGRect frame = CGRectMake(x,y, self.containerView.frame.size.width - x, self.containerView.frame.size.height - y);
         _tableView = [[UITableView alloc] initWithFrame:frame style:UITableViewStylePlain];
@@ -124,15 +125,9 @@
     return _tableView;
 }
 
--(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
-{
-    return 1;
-}
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 1; }
 
--(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-    return self.controls.count;
-}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section { return self.controls.count; }
 
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {

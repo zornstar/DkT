@@ -20,82 +20,341 @@
 #import "DkTDetailViewController.h"
 #import "ReaderViewController.h"
 #import "ZSRoundCell.h"
-
 #import "UIViewController+PKRevealController.h"
 #import "PKRevealController.h"
 
 @interface DkTBookmarkViewController ()
 
 @property (nonatomic, strong) NSMutableArray *updating;
-@property (nonatomic, strong) UILabel *noDocumentLabel;
+
 @end
 
-
-@implementation DkTBookmarkViewController
+@implementation DkTBookmarkViewController {
+}
 
 - (id)init
 {
     if(self = [super init])
     {
-        self.bookmarkManager = [DkTBookmarkManager sharedManager];
-        [self.bookmarkManager setDelegate:self];
-        _bookmarks = [[self.bookmarkManager bookmarks] mutableCopy];
-        self.updating = [[NSMutableArray alloc] initWithCapacity:self.bookmarks.count];
-        for(int i = 0; i < self.bookmarks.count; i++) [self.updating addObject:@(0)];
-        
-            
+        [self initialize];
     }
     return self;
 }
 
-- (void)viewDidLoad
-{
+-(void) initialize {
+    self.bookmarkManager = [DkTBookmarkManager sharedManager];
+    [self.bookmarkManager setDelegate:self];
+    self.bookmarks = [[self.bookmarkManager bookmarks] mutableCopy];
+}
+
+- (void)viewDidLoad {
     [super viewDidLoad];
-    
     self.view.backgroundColor = [UIColor activeColor];
     [self setup];
 }
 
-- (void)didReceiveMemoryWarning
-{
+- (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
-}
-
-
--(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
-{
-    return 1;
-}
-
--(NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-    return self.bookmarks.count;
+    _tableView = nil;
 }
 
 -(void) setup
 {
-    [self.view addSubview:self.tableView];
-    self.noDocumentLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, self.view.center.y-30, self.view.frame.size.width, 24)];
-    self.noDocumentLabel.text = @"You have no bookmarks.";
-    self.noDocumentLabel.textColor = [UIColor inactiveColor];
-    self.noDocumentLabel.backgroundColor = [UIColor clearColor];
-    self.noDocumentLabel.font = [UIFont fontWithName:kMainFont size:PAD_OR_POD(16, 12)];
-    self.noDocumentLabel.textAlignment = NSTextAlignmentCenter;
+    self.updating = [[NSMutableArray alloc] initWithCapacity:self.bookmarks.count];
+    
+    for(int i = 0; i < self.bookmarks.count; i++) [self.updating addObject:@(0)];
+    
     [self.view addSubview:self.noDocumentLabel];
-    self.noDocumentLabel.hidden = (self.bookmarks.count > 0);
-    self.noDocumentLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin;
+    self.noDocumentLabel.hidden = self.bookmarks.count > 0;
+    [self.view addSubview:self.tableView];
+    
 }
 
-#pragma mark
--(void) didAddBookmark:(DkTDocket *)bookmarkedItem
+-(BOOL) connectivityStatus
 {
-    [self.bookmarks insertObject:bookmarkedItem atIndex:0];
-    [self.updating insertObject:@0 atIndex:0];
-    CGRect frame = self.tableView.frame; frame.size.height = _tableView.rowHeight * self.bookmarks.count; self.tableView.frame = frame;
-    if(self.bookmarks.count > 0) self.noDocumentLabel.hidden = YES;
+    PACERConnectivityStatus status = [PACERClient connectivityStatus];
+    
+    if( (status & PACERConnectivityStatusNoInternet) > 0)
+    {
+        DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Network Error" andMessage:@"Check Network Connection"];
+        
+        [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+            [alertView dismissAnimated:YES];
+        }];
+        
+        [alertView show];
+        return FALSE;
+    }
+    
+    else if( (status & PACERConnectivityStatusNotLoggedIn) > 0)
+    {
+        DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Have you logged into PACER?"];
+        
+        [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+            
+            [alertView dismissAnimated:YES];
+            
+            [self.parentViewController.revealController showViewController:self.parentViewController.revealController.leftViewController animated:YES completion:^(BOOL finished) {
+                
+            }];
+            
+        }];
+        
+        
+        [alertView show];
+        
+        return FALSE;
+    }
+    
+    return TRUE;
+    
+}
+
+
+-(void) lookupDocket:(NSInteger)row
+{
+    
+    if([self connectivityStatus])
+    {
+        DkTDocket *selectedDocket = [self.bookmarks objectAtIndex:row];
+        ZSRoundCell *cell = [self cellForDocket:selectedDocket];
+        
+        if(cell.badgeString.length > 0)
+        {
+            cell.badgeString = @"\u2713";
+        }
+        
+        if(selectedDocket.link.length > 0)
+        {
+            UIResponder *firstResponder = [UIResponder currentFirstResponder];
+            [firstResponder resignFirstResponder];
+            
+            
+            
+            [[PACERClient sharedClient] retrieveDocket:selectedDocket sender:self];
+        }
+    }
+    
+}
+
+-(void) showSavedDocket:(DkTDocket *)docket
+{
+    NSArray *entries = [[DkTBookmarkManager sharedManager] savedDocket:docket];
+    
+    ZSRoundCell *cell = [self cellForDocket:docket];
+    
+    if(cell.badgeString.length > 0)
+    {
+        cell.badgeString = @"\u2713";
+    }
+    
+    if(entries.count > 0)
+    {
+        [self handleSavedDocket:docket entries:entries];
+    }
+}
+
+-(void) updateDocket:(DkTDocket *)docket
+{
+    if([self connectivityStatus])
+    {
+        PACERClient *client = [PACERClient sharedClient];
+        [client retrieveDocket:docket sender:self to:[client pacerDateString:[NSDate date]] from:docket.updated];
+        [self.updating replaceObjectAtIndex:[self.bookmarks indexOfObject:docket] withObject:@1];
+        ZSRoundCell *cell = [self cellForDocket:docket];
+        UIActivityIndicatorView *spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+        
+        spinner.frame = CGRectMake(0, 0, 24, 24);
+        cell.accessoryView = spinner;
+        [spinner startAnimating];
+    }
+}
+
+-(void) deleteBookmarkAtIndex:(NSInteger)index
+{
+    
+    DkTDocket *item = [self.bookmarks objectAtIndex:index];
+    [self.bookmarks removeObjectAtIndex:index];
+    [self.bookmarkManager deleteBookmark:item];
+    
+    CGRect frame = self.tableView.frame; frame.size.height = self.tableView.rowHeight * self.bookmarks.count; self.tableView.frame = frame;
+    
+    if(self.bookmarks.count > 0) [self.tableView reloadData];
+    
+    else self.noDocumentLabel.hidden = FALSE;
+    
+}
+
+-(void) loadBookmarks {
+    _bookmarks = nil;
+    _bookmarks = [NSMutableArray arrayWithArray:[self.bookmarkManager bookmarks]];
     [self.tableView reloadData];
 }
+
+-(void) reload {
+    [self loadBookmarks];
+    self.noDocumentLabel.hidden = (self.bookmarks.count > 0);
+}
+
+-(void) updateAllBookmarks
+{
+    if([self connectivityStatus])
+    {
+        DkTAlertView *alert = [[DkTAlertView alloc] initWithTitle:@"Update All" andMessage:@"Update all bookmarked dockets?"];
+        [alert addButtonWithTitle:@"YES" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+            
+            NSArray *bookmarks = [NSArray arrayWithArray:self.bookmarks];
+            [[DkTBookmarkManager sharedManager] updateBookmarks:bookmarks];
+            [alertView dismissAnimated:YES];
+            
+            for(ZSRoundCell *cell in [self.tableView visibleCells])
+            {
+                UIActivityIndicatorView *spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+                
+                spinner.frame = CGRectMake(0, 0, 24, 24);
+                cell.accessoryView = spinner;
+                [spinner startAnimating];
+                
+            }
+            
+            for(int i = 0; i < self.updating.count; ++i)
+            {
+                [self.updating replaceObjectAtIndex:i withObject:@1];
+            }
+        }];
+        [alert addButtonWithTitle:@"NO" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+            [alertView dismissAnimated:YES];
+        }];
+        
+        [alert show];
+    }
+}
+
+
+-(void) menuForIndexPath:(NSIndexPath *)indexPath {
+    
+    DkTDocket *docket = [self.bookmarks objectAtIndex:indexPath.row];
+    UIMenuController *menu = [UIMenuController sharedMenuController];
+    
+    [self.tableView becomeFirstResponder];
+    
+    __weak DkTBookmarkViewController *weakSelf = self;
+    
+    
+    PSMenuItem *saved = [[PSMenuItem alloc] initWithTitle:@"" block:^{
+        [weakSelf showSavedDocket:docket];
+        
+    }];
+    
+    PSMenuItem *update = [[PSMenuItem alloc] initWithTitle:@"" block:^{
+        [weakSelf updateDocket:docket];
+        
+    }];
+    
+    [saved cxa_setImage:[[UIImage imageNamed:@"save"] imageWithColor:[UIColor inactiveColor]] forTitle:@" "];
+    
+    [update cxa_setImage:[kUpdateImage imageWithColor:[UIColor inactiveColor]] forTitle:@"  "];
+    
+    
+    [menu setMenuItems:@[saved, update]];
+    
+    //CGFloat width =  self.detailViewController.contentSizeForViewInPopover.width;
+    CGRect rect = [self.tableView rectForRowAtIndexPath:indexPath];
+    //rect.size.width = width;
+    
+    [menu setTargetRect:rect inView:self.tableView];
+    [menu setMenuVisible:YES];
+}
+
+
+-(void) addBadgeToDocket:(DkTDocket *)docket number:(int)number
+{
+    NSInteger index = [self.bookmarks indexOfObject:docket];
+    ZSRoundCell *cell = [self cellForDocket:docket];
+    cell.accessoryView = nil;
+    [self.updating replaceObjectAtIndex:index withObject:@0];
+    cell.badgeString = (number != 0) ? [NSString stringWithFormat:@"%d", number] : @"\u2713";
+    
+    NSString *subtitle = [NSString stringWithFormat:@"%@, %@", docket.case_num, [DkTCodeManager translateCode:[docket court]  inputFormat:DkTCodePACERDisplayKey outputFormat:DkTCodeBluebookKey]];
+    
+    if(docket.updated.length > 0)
+    {
+        NSString *datestring = [NSString stringWithFormat:PAD_OR_POD(@"  (last checked %@)", @"\n(last checked %@)") , docket.updated];
+        subtitle = [subtitle stringByAppendingString:datestring];
+    }
+    
+    cell.detailTextLabel.text = subtitle;
+    [cell.detailTextLabel setNeedsDisplay];
+}
+
+-(ZSRoundCell *) cellForDocket:(DkTDocket *)docket
+{
+    NSInteger index = [self.bookmarks indexOfObject:docket];
+    return (ZSRoundCell *)[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:index inSection:0]];
+}
+
+-(void) viewDidDisappear:(BOOL)animated
+{
+    [[UIMenuController sharedMenuController] update];
+    
+    NSInteger rows = [self.tableView numberOfRowsInSection:0];
+    
+    for(int i = 0; i < rows; ++i)
+    {
+        ZSRoundCell *cell = (ZSRoundCell *)[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:0]];
+        cell.badgeString = nil;
+    }
+}
+
+#pragma mark - UI
+
+-(UILabel *) noDocumentLabel {
+    
+    if(_noDocumentLabel == nil) {
+        _noDocumentLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, self.view.center.y-30, self.view.frame.size.width, 24)];
+        _noDocumentLabel.text = @"You have no bookmarks.";
+        _noDocumentLabel.textColor = [UIColor inactiveColor];
+        _noDocumentLabel.backgroundColor = [UIColor clearColor];
+        _noDocumentLabel.font = [UIFont fontWithName:kMainFont size:PAD_OR_POD(16, 12)];
+        _noDocumentLabel.textAlignment = NSTextAlignmentCenter;
+        _noDocumentLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin;
+    }
+    
+    return _noDocumentLabel;
+    
+}
+-(UITableView *) tableView
+{
+    if(_tableView == nil)
+    {
+        _tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
+        
+        _tableView.rowHeight = PAD_OR_POD(65, 60);
+        
+        CGRect frame; frame.size.height = _tableView.rowHeight * self.bookmarks.count; frame.size.width = self.view.frame.size.width*.85; frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,(self.view.frame.size.width -frame.size.width)/2.0); _tableView.frame = frame;
+        _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        _tableView.dataSource = self;
+        _tableView.delegate = self;
+        _tableView.scrollEnabled = YES;
+        _tableView.bounces = NO;
+        _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+        UIView *backgroundView = [[UIView alloc] init];
+        backgroundView.backgroundColor = [UIColor clearColor];
+        [_tableView setBackgroundView:backgroundView];
+        IOS7(_tableView.separatorInset = UIEdgeInsetsZero;, );
+        _tableView.layer.cornerRadius = 5.0;
+        
+    }
+    
+    return _tableView;
+}
+
+
+
+#pragma mark - TableView Delegate
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 1; }
+
+-(NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section { return self.bookmarks.count; }
 
 -(UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -125,10 +384,9 @@
         cell.badgeTextColor = [UIColor inactiveColor];
         cell.badgeColor = [UIColor activeColor];
         cell.badgeRightOffset = PAD_OR_POD(unit*3+5, 5);
-        
         cell.contentView.helpText = @"Select the disk to load saved docket as last checked. Select the calendar to update a docket.  Press and hold the bookmarks tab below to update all dockets.";
             
-       // [cell.contentView addGestureRecognizer:self.longPress];
+        [cell addGestureRecognizer:self.longPress];
     }
     
 
@@ -144,7 +402,7 @@
         cell.cornerRounding = UIRectCornerBottomLeft | UIRectCornerBottomRight;
     }
     
-    cell.imageView.image = [kBookmarkImage imageWithColor:[UIColor activeColor]];
+    cell.imageView.image = [[DkTImageCache sharedCache] imageNamed:@"bookmark" color:[UIColor activeColor]];
     cell.imageView.transform = CGAffineTransformMakeScale(.5, .5);
     cell.contentView.backgroundColor = (indexPath.row%2 == 0) ? [UIColor inactiveColor] : [UIColor inactiveColorDark];
     cell.backgroundView = [[UIView alloc] init];
@@ -226,67 +484,28 @@
     }
     return cell;
 }
-
-
--(void) lookupDocket:(NSInteger)row
-{
-
-    if([self connectivityStatus])
-    {
-        DkTDocket *selectedDocket = [self.bookmarks objectAtIndex:row];
-        ZSRoundCell *cell = [self cellForDocket:selectedDocket];
-        
-        if(cell.badgeString.length > 0)
-        {
-            cell.badgeString = @"\u2713";
-        }
-        
-        if(selectedDocket.link.length > 0)
-        {
-            UIResponder *firstResponder = [UIResponder currentFirstResponder];
-            [firstResponder resignFirstResponder];
-            
-            
-            
-            [[PACERClient sharedClient] retrieveDocket:selectedDocket sender:self];
-        }
-    }
-    
+-(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) [self menuForIndexPath:indexPath];
 }
 
--(void) showSavedDocket:(DkTDocket *)docket
-{
-    NSArray *entries = [[DkTBookmarkManager sharedManager] savedDocket:docket];
-    
-    ZSRoundCell *cell = [self cellForDocket:docket];
-    
-    if(cell.badgeString.length > 0)
-    {
-        cell.badgeString = @"\u2713";
-    }
-    
-    if(entries.count > 0)
-    {
-        [self handleSavedDocket:docket entries:entries];
-    }
-}
+-(UITableViewCellEditingStyle) tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath { return  UITableViewCellEditingStyleNone; }
 
--(void) updateDocket:(DkTDocket *)docket
-{
-    if([self connectivityStatus])
-    {
-        PACERClient *client = [PACERClient sharedClient];
-        [client retrieveDocket:docket sender:self to:[client pacerDateString:[NSDate date]] from:docket.updated];
-        [self.updating replaceObjectAtIndex:[self.bookmarks indexOfObject:docket] withObject:@1];
-        ZSRoundCell *cell = [self cellForDocket:docket];
-        UIActivityIndicatorView *spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-        
-        spinner.frame = CGRectMake(0, 0, 24, 24);
-        cell.accessoryView = spinner;
-        [spinner startAnimating];
-    }
-}
+- (BOOL)tableView:(UITableView *)tableView shouldIndentWhileEditingRowAtIndexPath:(NSIndexPath *)indexPath {  return NO; }
 
+-(BOOL) tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath {return YES; }
+
+-(void) tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath {
+    DkTDocket *item = [self.bookmarks objectAtIndex:sourceIndexPath.row];
+    [self.bookmarkManager moveBookmark:item toIndex:destinationIndexPath.row];
+    _bookmarks = [[self.bookmarkManager bookmarks] mutableCopy];
+    [self.tableView reloadData];
+    //do stuff
+     
+}
+-(void) scrollViewWillBeginDragging:(UIScrollView *)scrollView { [[UIMenuController sharedMenuController] setMenuVisible:NO animated:YES]; }
+
+
+#pragma mark PACERClientProtocol
 -(void) handleDocketError:(DkTDocket *)docket
 {
     NSInteger index = [self.bookmarks indexOfObject:docket];
@@ -299,7 +518,7 @@
     if(from.length > 0)
     {
         NSInteger n = [[DkTBookmarkManager sharedManager] appendEntries:entries toSavedDocket:docket];
-        [self addBadgeToDocket:docket number:n];
+        [self addBadgeToDocket:docket number:(int)n];
     }
     
     else
@@ -342,254 +561,37 @@
         [self.tableView deselectRowAtIndexPath:[self.tableView indexPathForSelectedRow] animated:YES];
     }];
 }
--(void) loadBookmarks
+     
+-(void) tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
+        
+    if(editingStyle == UITableViewCellEditingStyleDelete) { [self deleteBookmarkAtIndex:indexPath.row]; }
+    
+}
+
+#pragma mark Bookmark Delegate Methods
+-(void) didAddBookmark:(DkTDocket *)bookmarkedItem
 {
-    _bookmarks = nil;
-    _bookmarks = [NSMutableArray arrayWithArray:[self.bookmarkManager bookmarks]];
+    [self.bookmarks insertObject:bookmarkedItem atIndex:0];
+    [self.updating insertObject:@0 atIndex:0];
+    CGRect frame = self.tableView.frame; frame.size.height = self.tableView.rowHeight * self.bookmarks.count; self.tableView.frame = frame;
+    if(self.bookmarks.count > 0) self.noDocumentLabel.hidden = YES;
     [self.tableView reloadData];
 }
 
--(void) reload
-{
-    [self loadBookmarks];
-    self.noDocumentLabel.hidden = (self.bookmarks.count > 0);
+#pragma mark - Gesture Recognizer
+-(UILongPressGestureRecognizer *) longPress {
+    UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+    longPress.delegate = self;
+    return longPress;
 }
 
--(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) [self menuForIndexPath:indexPath];
-}
-/*
--(void) writeBookmarks
-{
-    [self.bookmarkManager writeItems:self.bookmarks];
+-(void) handleLongPress:(UILongPressGestureRecognizer *)sender {
+    if(sender.state == UIGestureRecognizerStateBegan)
+        [self.tableView setEditing:!self.tableView.editing];
 }
 
--(void) moveBookmarkAtIndex:(NSInteger)originalIndex toNewIndex:(NSInteger)newIndex
-{
-    DkTDocket *item = [self.bookmarks objectAtIndex:originalIndex];
-    
-    [self.bookmarks removeObjectAtIndex:originalIndex];
-    [self.bookmarks insertObject:item atIndex:newIndex];
-    [self writeBookmarks];
-    [self.tableView reloadData];
-    
-}*/
-
--(void) deleteBookmarkAtIndex:(NSInteger)index
-{
-   
-    DkTDocket *item = [self.bookmarks objectAtIndex:index];
-    [self.bookmarks removeObjectAtIndex:index];
-    [self.bookmarkManager deleteBookmark:item];
-        
-    CGRect frame = self.tableView.frame; frame.size.height = _tableView.rowHeight * self.bookmarks.count; self.tableView.frame = frame;
-    
-    if(self.bookmarks.count > 0) [self.tableView reloadData];
-    
-    else self.noDocumentLabel.hidden = FALSE;
-    
-}
-
--(void) tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    
-    if(editingStyle == UITableViewCellEditingStyleDelete)
-    {
-        
-        [self deleteBookmarkAtIndex:indexPath.row];
-    }
-    
-    if(editingStyle == UITableViewCellEditingStyleNone)
-    {
-        
-    }
-
-}
-
--(UITableView *) tableView
-{
-    if(_tableView == nil)
-    {
-        _tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
-        
-        _tableView.rowHeight = PAD_OR_POD(65, 60);
-        
-        CGRect frame; frame.size.height = _tableView.rowHeight * self.bookmarks.count; frame.size.width = self.view.frame.size.width*.85; frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,(self.view.frame.size.width -frame.size.width)/2.0); _tableView.frame = frame;
-        _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-        _tableView.dataSource = self;
-        _tableView.delegate = self;
-        _tableView.scrollEnabled = YES;
-        _tableView.bounces = NO;
-        _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-        UIView *backgroundView = [[UIView alloc] init];
-        backgroundView.backgroundColor = [UIColor clearColor];
-        [_tableView setBackgroundView:backgroundView];
-        IOS7(_tableView.separatorInset = UIEdgeInsetsZero;, );
-        _tableView.layer.cornerRadius = 5.0;
-        
-    }
-    
-    return _tableView;
-}
-
--(BOOL) connectivityStatus
-{
-    PACERConnectivityStatus status = [PACERClient connectivityStatus];
-    
-    if( (status & PACERConnectivityStatusNoInternet) > 0)
-    {
-        DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Network Error" andMessage:@"Check Network Connection"];
-        
-        [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-            [alertView dismissAnimated:YES];
-        }];
-        
-        [alertView show];
-        return FALSE;
-    }
-    
-    else if( (status & PACERConnectivityStatusNotLoggedIn) > 0)
-    {
-        DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Have you logged into PACER?"];
-        
-        [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-            
-            [alertView dismissAnimated:YES];
-            
-            [self.parentViewController.revealController showViewController:self.parentViewController.revealController.leftViewController animated:YES completion:^(BOOL finished) {
-                
-            }];
-            
-        }];
-        
-        
-        [alertView show];
-        
-        return FALSE;
-    }
-    
-    return TRUE;
-    
-}
-
--(void) scrollViewWillBeginDragging:(UIScrollView *)scrollView
-{
-    [[UIMenuController sharedMenuController] setMenuVisible:NO animated:YES];
-}
-
--(void) menuForIndexPath:(NSIndexPath *)indexPath
-{
-    
-    DkTDocket *docket = [self.bookmarks objectAtIndex:indexPath.row];
-    UIMenuController *menu = [UIMenuController sharedMenuController];
-    
-    [self.tableView becomeFirstResponder];
-    
-    __weak DkTBookmarkViewController *weakSelf = self;
-    
-    
-    PSMenuItem *saved = [[PSMenuItem alloc] initWithTitle:@"Saved Docket" block:^{
-        [weakSelf showSavedDocket:docket];
-        
-    }];
-    
-    PSMenuItem *update = [[PSMenuItem alloc] initWithTitle:@"Check for Updates" block:^{
-        [weakSelf updateDocket:docket];
-        
-    }];
-    
-    [saved cxa_setImage:[[UIImage imageNamed:@"save"] imageWithColor:[UIColor inactiveColor]] forTitle:@" "];
-    
-    [update cxa_setImage:[kUpdateImage imageWithColor:[UIColor inactiveColor]] forTitle:@"  "];
-    
-    
-    [menu setMenuItems:@[saved, update]];
-    
-    //CGFloat width =  self.detailViewController.contentSizeForViewInPopover.width;
-    CGRect rect = [self.tableView rectForRowAtIndexPath:indexPath];
-    //rect.size.width = width;
-    
-    [menu setTargetRect:rect inView:self.tableView];
-    [menu setMenuVisible:YES];
-}
-
--(UILongPressGestureRecognizer *) longPress
-{
-    return [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
-}
-
--(void) updateAllBookmarks
-{
-    if([self connectivityStatus])
-    {
-        DkTAlertView *alert = [[DkTAlertView alloc] initWithTitle:@"Update All" andMessage:@"Update all bookmarked dockets?"];
-        [alert addButtonWithTitle:@"YES" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-            
-            NSArray *bookmarks = [NSArray arrayWithArray:self.bookmarks];
-            [[DkTBookmarkManager sharedManager] updateBookmarks:bookmarks];
-            [alertView dismissAnimated:YES];
-            
-            for(ZSRoundCell *cell in [self.tableView visibleCells])
-            {
-                UIActivityIndicatorView *spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-                
-                spinner.frame = CGRectMake(0, 0, 24, 24);
-                cell.accessoryView = spinner;
-                [spinner startAnimating];
-                
-            }
-            
-            for(int i = 0; i < self.updating.count; ++i)
-            {
-                [self.updating replaceObjectAtIndex:i withObject:@1];
-            }
-        }];
-        [alert addButtonWithTitle:@"NO" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
-            [alertView dismissAnimated:YES];
-        }];
-        
-        [alert show];
-    }
-}
-
--(void) addBadgeToDocket:(DkTDocket *)docket number:(int)number
-{
-    NSInteger index = [self.bookmarks indexOfObject:docket];
-    ZSRoundCell *cell = [self cellForDocket:docket];
-    cell.accessoryView = nil;
-    [self.updating replaceObjectAtIndex:index withObject:@0];
-    cell.badgeString = (number != 0) ? [NSString stringWithFormat:@"%d", number] : @"\u2713";
-    
-    NSString *subtitle = [NSString stringWithFormat:@"%@, %@", docket.case_num, [DkTCodeManager translateCode:[docket court]  inputFormat:DkTCodePACERDisplayKey outputFormat:DkTCodeBluebookKey]];
-    
-    if(docket.updated.length > 0)
-    {
-        NSString *datestring = [NSString stringWithFormat:PAD_OR_POD(@"  (last checked %@)", @"\n(last checked %@)") , docket.updated];
-        subtitle = [subtitle stringByAppendingString:datestring];
-    }
-    
-    cell.detailTextLabel.text = subtitle;
-    [cell.detailTextLabel setNeedsDisplay];
-}
-
--(ZSRoundCell *) cellForDocket:(DkTDocket *)docket
-{
-    NSInteger index = [self.bookmarks indexOfObject:docket];
-    return (ZSRoundCell *)[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:index inSection:0]];
-}
-
--(void) viewDidDisappear:(BOOL)animated
-{
-    [[UIMenuController sharedMenuController] update];
-    
-    NSInteger rows = [self.tableView numberOfRowsInSection:0];
-    
-    for(int i = 0; i < rows; ++i)
-    {
-        ZSRoundCell *cell = (ZSRoundCell *)[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:0]];
-        cell.badgeString = nil;
-    }
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return YES;
 }
 
 @end

@@ -20,6 +20,7 @@
 #import "UIResponder+FirstResponder.h"
 #import "DkTAlertView.h"
 #import "PKRevealController.h"
+#import "DkTRecentDocketManager.h"
 #import "ZSRoundCell.h"
 #import "DkTImageCache.h"
 
@@ -82,9 +83,9 @@
         IOS7(_tableView.separatorInset = UIEdgeInsetsZero;,);
         _tableView.rowHeight = PAD_OR_POD(65, 52);
         CGRect frame;
-        frame.size.height = self.view.frame.size.height * (PAD_OR_POD(.7, .65)) + self.results.count * self.tableView.sectionHeaderHeight;
+        frame.size.height = self.view.frame.size.height * (PAD_OR_POD(.7, .6)) + self.results.count * self.tableView.sectionHeaderHeight;
         frame.size.width = self.view.frame.size.width*.85;
-        frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,(self.view.frame.size.width -frame.size.width*1.1));
+        frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,.09*self.view.frame.size.height);
         _tableView.frame = frame;
         
         _tableView.dataSource = self;
@@ -97,7 +98,6 @@
         backgroundView.backgroundColor = [UIColor activeColor];
         [_tableView setBackgroundView:backgroundView];
         _tableView.clipsToBounds = YES;
-        
         _tableView.layer.cornerRadius = 5.0;
         IOS7(_tableView.separatorInset = UIEdgeInsetsMake(0, 0, 0, 0);,  );
     }
@@ -258,6 +258,9 @@
 
 -(void) handleDocket:(DkTDocket *)docket entries:(NSArray *)entries to:(NSString *)to from:(NSString *)from
 {
+    
+    [[DkTRecentDocketManager sharedManager] addBookmark:docket];
+    
     UIViewController *parent = [self parentViewController];
     
     if(parent.presentedViewController == nil)

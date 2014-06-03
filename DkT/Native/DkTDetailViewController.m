@@ -83,11 +83,7 @@
     [self toggleButtonVisibility];
 }
 
--(void) setTitle:(NSString *)title
-{
-    [super setTitle:title];
-    self.navigationItem.titleView = [self titleLabel];
-}
+#pragma mark - View Cycle
 
 -(void) viewWillAppear:(BOOL)animated
 {
@@ -95,13 +91,13 @@
     
     if(!self.file)
     {
-    
+        
         
         if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
         {
             [self.docketButton addTarget:self action:@selector(toggleMasterVisible) forControlEvents:UIControlEventTouchUpInside];
         }
-    
+        
         else if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
         {
             [self.docketButton addTarget:self action:@selector(revealPanel:) forControlEvents:UIControlEventTouchUpInside];
@@ -128,34 +124,44 @@
         
         else if (UIInterfaceOrientationIsPortrait([[UIApplication sharedApplication] statusBarOrientation])){
             
-                [self toggleMasterVisible];
+            [self toggleMasterVisible];
         }
     }
     _appeared = YES;
 }
--(void) toggleButtonVisibility
-{
-    NSMutableArray *buttons =  [NSMutableArray array];
-    
-    if(self.filePath != nil)
-    {
-        if([[PACERClient sharedClient] networkReachabilityStatus] != AFNetworkReachabilityStatusNotReachable)
-        {
-            [buttons addObjectsFromArray:@[self.mailBarButtonItem, self.space]];
-        }
-        if(!self.file)
-        {
-            [buttons addObjectsFromArray:@[self.saveBarButtonItem, self.space]];
-        }
-        
-        [buttons addObjectsFromArray:@[self.actionBarButtonItem]];
-        
-    }
-    
-     
-    self.navigationItem.rightBarButtonItems = buttons;
 
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
 }
+
+-(void)viewWillDisappear:(BOOL)animated
+{
+    if(_actionPopoverController) [self.actionPopoverController dismissPopoverAnimated:YES];
+    
+    if([self.masterPopoverController isPopoverVisible])
+    {
+        [self toggleMasterVisible];
+        self.masterPopoverController = nil;
+        self.svc = nil;
+        self.toggleMasterVisibleSelector = nil;
+    }
+}
+
+-(void) toggleMasterVisible {
+    
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+    if(self.svc && self.toggleMasterVisibleSelector)
+        [self.svc performSelector:self.toggleMasterVisibleSelector];
+#pragma clang diagnostic pop
+    
+}
+
+
+#pragma mark - UI
 
 -(UILabel *) titleLabel
 {
@@ -174,6 +180,108 @@
     return label;
 }
 
+-(UIActivityViewController *) activityController
+{
+    
+    if(_activityController == nil)
+    {
+        NSURL *url = [NSURL fileURLWithPath:self.filePath];
+        NSArray *objectsToShare = @[url];
+        UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:objectsToShare
+                                                                                 applicationActivities:nil];
+        
+        NSMutableArray *excludedActivities = [@[UIActivityTypeAssignToContact, UIActivityTypePostToFacebook, UIActivityTypePostToTwitter,UIActivityTypePostToWeibo, UIActivityTypeSaveToCameraRoll, UIActivityTypeMail] mutableCopy];
+        IOS7([excludedActivities addObject:UIActivityTypeAddToReadingList];, );
+        IOS7([excludedActivities addObject:UIActivityTypePostToVimeo];, );
+        IOS7([excludedActivities addObject:UIActivityTypePostToFlickr];, );
+        IOS7([excludedActivities addObject:UIActivityTypePostToTencentWeibo];, );
+        
+        
+        if(![UIPrintInteractionController canPrintURL:url]) [excludedActivities addObject:UIActivityTypePrint];
+        
+        activityVC.excludedActivityTypes = excludedActivities;
+        
+        
+        _activityController = activityVC;
+        
+        
+    }
+    
+    return _activityController;
+}
+
+-(UIPopoverController *) actionPopoverController
+{
+    if(_actionPopoverController == nil)
+    {
+        _actionPopoverController = [[UIPopoverController alloc] initWithContentViewController:self.activityController];
+        _actionPopoverController.delegate = self;
+    }
+    
+    return _actionPopoverController;
+}
+
+#pragma mark - Methods
+
+-(void) setTitle:(NSString *)title
+{
+    [super setTitle:title];
+    self.navigationItem.titleView = [self titleLabel];
+}
+
+-(void) setFilePath:(NSString *)filePath
+{
+    _filePath = filePath;
+    [self toggleButtonVisibility];
+}
+
+
+-(void) action:(id)sender
+{
+    if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+    {
+        if (_actionPopoverController == nil) {
+            
+            [self.actionPopoverController presentPopoverFromBarButtonItem:[self.navigationItem.rightBarButtonItems lastObject]
+                                                 permittedArrowDirections:UIPopoverArrowDirectionUp animated:YES];
+        } else {
+            [self.actionPopoverController dismissPopoverAnimated:YES];
+        }
+    }
+    
+    else
+    {
+        if(self.activityController.presentingViewController) self.activityController = nil;
+        [self presentViewController:self.activityController animated:YES completion:nil];
+    }
+    
+    
+}
+
+
+-(void) toggleButtonVisibility
+{
+    NSMutableArray *buttons =  [NSMutableArray array];
+    
+    if(self.filePath != nil)
+    {
+        if([[PACERClient sharedClient] networkReachabilityStatus] != AFNetworkReachabilityStatusNotReachable)
+        {
+            [buttons addObjectsFromArray:@[self.mailBarButtonItem, self.space]];
+        }
+        if(!self.file && self.docketEntry)
+        {
+            [buttons addObjectsFromArray:@[self.saveBarButtonItem, self.space]];
+        }
+        
+        [buttons addObjectsFromArray:@[self.actionBarButtonItem]];
+        
+    }
+    
+    
+    self.navigationItem.rightBarButtonItems = buttons;
+    
+}
 
 -(void) dismiss
 {
@@ -182,13 +290,12 @@
     }];
 }
 
-- (void)didReceiveMemoryWarning
-{
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
-}
 
--(void) save { [DkTDocumentManager saveDocketEntry:self.docketEntry atTempPath:self.filePath]; }
+-(void) save {
+    if(self.docketEntry) {
+        [DkTDocumentManager saveDocketEntry:self.docketEntry atTempPath:self.filePath];
+    }
+}
 
 -(void) revealPanel:(id)sender
 {
@@ -219,6 +326,15 @@
             
         }
         
+        else if (!self.docketEntry) {
+            
+            subject = [NSString stringWithFormat:@"%@ - %@", self.title, self.docket.updated];
+            NSData *data = [NSData dataWithContentsOfFile:self.filePath];
+            NSString *fileName = [NSString stringWithFormat:@"%@ - %@.pdf", self.title, self.docket.updated];
+            [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:fileName];
+            
+        }
+            
         else
         {
             subject = [NSString stringWithFormat:@"%@ - %@", self.docketEntry.docket.name, self.title];
@@ -227,6 +343,7 @@
             NSString *fileName = [NSString stringWithFormat:@"%@ - %@.pdf", self.docketEntry.docket.name, self.docketEntry.entryNumber];
             [mailVC addAttachmentData:data mimeType:@"application/pdf" fileName:fileName];
         }
+        
         
         [mailVC setSubject:subject];
         
@@ -253,6 +370,8 @@
     }
     
 }
+
+#pragma mark - Delegate Methods
 
 - (void) mailComposeController:(MFMailComposeViewController *)controller didFinishWithResult:(MFMailComposeResult)result error:(NSError *)error
 {
@@ -282,114 +401,14 @@
     _masterPopoverController = nil;
 }
 
--(BOOL) splitViewController:(UISplitViewController *)svc shouldHideViewController:(UIViewController *)vc inOrientation:(UIInterfaceOrientation)orientation
-{
-    return UIInterfaceOrientationIsPortrait(orientation);
+-(BOOL) splitViewController:(UISplitViewController *)svc shouldHideViewController:(UIViewController *)vc inOrientation:(UIInterfaceOrientation)orientation { return UIInterfaceOrientationIsPortrait(orientation); }
 
-}
-
--(BOOL) shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation
-{
-    return YES;
-}
-
--(void) setFilePath:(NSString *)filePath
-{
-    _filePath = filePath;
-    
-    [self toggleButtonVisibility];
-}
-
--(UIActivityViewController *) activityController
-{
-    
-    if(_activityController == nil)
-    {
-        NSURL *url = [NSURL fileURLWithPath:self.filePath];
-        NSArray *objectsToShare = @[url];
-        UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:objectsToShare
-                                                                                     applicationActivities:nil];
-        
-        NSMutableArray *excludedActivities = [@[UIActivityTypeAssignToContact, UIActivityTypePostToFacebook, UIActivityTypePostToTwitter,UIActivityTypePostToWeibo, UIActivityTypeSaveToCameraRoll, UIActivityTypeMail] mutableCopy];
-        IOS7([excludedActivities addObject:UIActivityTypeAddToReadingList];, );
-        IOS7([excludedActivities addObject:UIActivityTypePostToVimeo];, );
-        IOS7([excludedActivities addObject:UIActivityTypePostToFlickr];, );
-        IOS7([excludedActivities addObject:UIActivityTypePostToTencentWeibo];, );
-        
-        
-        if(![UIPrintInteractionController canPrintURL:url]) [excludedActivities addObject:UIActivityTypePrint];
-       
-        activityVC.excludedActivityTypes = excludedActivities;
-        
-        
-        _activityController = activityVC;
-        
-        
-    }
-    
-    return _activityController;
-}
-
--(UIPopoverController *) actionPopoverController
-{
-    if(_actionPopoverController == nil)
-    {
-        _actionPopoverController = [[UIPopoverController alloc] initWithContentViewController:self.activityController];
-        _actionPopoverController.delegate = self;
-    }
-    
-    return _actionPopoverController;
-}
--(void) action:(id)sender
-{
-    if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
-    {
-        if (_actionPopoverController == nil) {
-            //The color picker popover is not showing. Show it.
-            [self.actionPopoverController presentPopoverFromBarButtonItem:[self.navigationItem.rightBarButtonItems lastObject]
-                                                 permittedArrowDirections:UIPopoverArrowDirectionUp animated:YES];
-        } else {
-            [self.actionPopoverController dismissPopoverAnimated:YES];
-        }
-    }
-    
-    else
-    {
-        if(self.activityController.presentingViewController) self.activityController = nil;
-        
-        [self presentViewController:self.activityController animated:YES completion:nil];
-    }
-    
-    
-}
-
+-(BOOL) shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation { return YES; }
 
 -(void) popoverControllerDidDismissPopover:(UIPopoverController *)popoverController
 {
     if(popoverController == self.actionPopoverController) self.actionPopoverController = nil;
 }
 
--(void)viewWillDisappear:(BOOL)animated
-{
-    if(_actionPopoverController) [self.actionPopoverController dismissPopoverAnimated:YES];
-    
-    if([self.masterPopoverController isPopoverVisible])
-    {
-        [self toggleMasterVisible];
-        self.masterPopoverController = nil;
-        self.svc = nil;
-        self.toggleMasterVisibleSelector = nil;
-    }
-}
-
--(void) toggleMasterVisible {
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-    if(self.svc && self.toggleMasterVisibleSelector)
-        [self.svc performSelector:self.toggleMasterVisibleSelector];
-#pragma clang diagnostic pop
-    
-}
 
 @end

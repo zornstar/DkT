@@ -6,6 +6,7 @@
 
 #import <UIKit/UIKit.h>
 //#import "SecondaryClient.h"
+#import "RNGridMenu.h"
 #import "DkTDocket.h"
 #import "DkTDownloadManager.h"
 #import "PSMenuItem.h"
@@ -13,7 +14,7 @@
 
 @class DkTDetailViewController, DkTDocketTableView;
 
-@interface DkTDocketTableViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, PACERClientProtocol, UISearchDisplayDelegate, UISearchBarDelegate, UIGestureRecognizerDelegate, DkTDownloadManagerProtocol>
+@interface DkTDocketTableViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, PACERClientProtocol, UISearchDisplayDelegate, UISearchBarDelegate, UIGestureRecognizerDelegate, DkTDownloadManagerProtocol, UIPopoverControllerDelegate, RNGridMenuDelegate, MFMailComposeViewControllerDelegate>
 
 @property (nonatomic, strong) NSArray *docketEntries;
 @property (nonatomic, weak) DkTDocket *docket;

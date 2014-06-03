@@ -8,6 +8,7 @@
 #import "DkTSearchViewController.h"
 #import "DkTBookmarkViewController.h"
 #import "DkTDocumentsViewController.h"
+#import "DkTSegmentedController.h"
 #import "DkTTabBar.h"
 
 #import "ZSHelpController.h"
@@ -21,10 +22,8 @@
     CGRect _contentFrame;
     CGRect _horizontalFrame;
     CGPoint _center;
-    
     CGFloat _tabBarHeight;
     CGRect _tabBarFrame;
-    
 }
 @end
 
@@ -53,8 +52,7 @@
     /*A hack to change orientation if it starts in landscape
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{*/
-        
-        
+  
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, .1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
             if(UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation))
             {
@@ -66,16 +64,13 @@
                 [self didRotateFromInterfaceOrientation:UIInterfaceOrientationLandscapeLeft | UIInterfaceOrientationLandscapeRight];
             }
         });
-        
    // });
 }
 -(void) setupViewControllers
 {
     _viewControllers = [NSMutableArray arrayWithCapacity:3];
     
-    UINavigationController *navCtr = [[UINavigationController alloc] initWithRootViewController:[[DkTSearchViewController alloc] init]];
-    [navCtr setNavigationBarHidden:YES];
-    [self.viewControllers addObject:navCtr];
+    [self.viewControllers addObject:[[DkTSegmentedController alloc] init]];
     [self.viewControllers addObject:[[DkTBookmarkViewController alloc] init]];
     [self.viewControllers addObject:[[DkTDocumentsViewController alloc] init]];
 }
@@ -166,6 +161,8 @@
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
+
+#pragma mark - Orientation
 
 -(void) willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
 {
@@ -267,15 +264,12 @@
     
 }
 
--(CGRect) horizontalTabFrame
-{
-    return _tabBarFrame;
-}
+-(CGRect) horizontalTabFrame { return _tabBarFrame; }
 
--(UILongPressGestureRecognizer *) longPress
-{
-    return [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
-}
+#pragma mark - Gestures
+
+-(UILongPressGestureRecognizer *) longPress {    return [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)]; }
+
 -(void) handleLongPress:(UILongPressGestureRecognizer *)sender
 {
     

@@ -63,10 +63,6 @@
     return UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad;
 }
 
--(void) viewWillAppear:(BOOL)animated
-{
-    
-}
 -(void) performSlide:(id)sender
 {
     if(self.focusedController == self.frontViewController)

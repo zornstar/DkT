@@ -26,7 +26,7 @@ extern NSString* const DocketCriminalKeys[];
 @property (nonatomic, copy) NSString *cs_caseid;
 
 
--(DocketType)type;
+-(DocketType) type;
 -(NSString *) folder;
 -(NSString *) courtLink;
 -(NSString *) shortCourt;

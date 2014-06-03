@@ -37,6 +37,9 @@ NSString* const CaseNumberKey = @"case_no";
 NSString* const PartyKey = @"party";
 
 
+NSString* const CTNameKey = @"name";
+NSString* const CTCodeKey = @"code";
+
 @interface DkTSearchViewController ()
 {
     
@@ -100,7 +103,7 @@ NSString* const PartyKey = @"party";
 {
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor activeColor];
-    ((DkTTabViewController *)self.parentViewController.parentViewController).delegate = self;
+    ((DkTTabViewController *)self.parentViewController.parentViewController.parentViewController).delegate = self;
     [self setup];
 }
 
@@ -123,7 +126,7 @@ NSString* const PartyKey = @"party";
         CGRect frame;
         frame.size.height = PAD_OR_POD(_tableView.rowHeight * self.labels.count, MIN(_tableView.rowHeight * self.labels.count, self.view.frame.size.height * .65));
         frame.size.width = self.view.frame.size.width*.85;
-        frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,.06*self.view.frame.size.height);
+        frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,.09*self.view.frame.size.height);
         _tableView.frame = frame;
         _tableView.dataSource = self; _tableView.delegate = self;
         _tableView.scrollEnabled = NO;
@@ -238,7 +241,8 @@ NSString* const PartyKey = @"party";
 
 -(void) setup
 {
-#define DkTCourtTypeCreate(_name, _code) @{@"name":_name, @"code":_code}
+    
+#define DkTCourtTypeCreate(_name, _code) @{CTNameKey:_name, CTCodeKey:_code}
     
     _courtTypes            = @[DkTCourtTypeCreate(@"All",@"all"),
                                DkTCourtTypeCreate(@"Appellate", @"ap"),
@@ -408,7 +412,7 @@ NSString* const PartyKey = @"party";
         CGRect frame;
         frame.size.width = self.tableView.rowHeight*2.5;
         frame.size.height = self.tableView.rowHeight*.75;
-        frame.origin = CGPointMake(self.tableView.center.x-frame.size.width/2., CGRectGetMaxY(self.tableView.frame)+self.tableView.frame.origin.y);
+        frame.origin = CGPointMake(self.tableView.center.x-frame.size.width/2., CGRectGetMaxY(self.tableView.frame)+self.tableView.frame.origin.y*.5);
         _searchPACERButton.frame = frame;
         [_searchPACERButton setIconSpacing:15.];
         _searchPACERButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
@@ -489,7 +493,7 @@ NSString* const PartyKey = @"party";
     [[self.tableView cellForRowAtIndexPath:indexPath].detailTextLabel setNeedsDisplay];
     [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
     
-    _selectedCourtType = i;
+    _selectedCourtType = (PACERCourtType)i;
     [self.keys removeAllObjects];
     
     switch (i) {

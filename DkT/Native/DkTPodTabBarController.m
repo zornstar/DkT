@@ -9,6 +9,7 @@
 #import "DkTBookmarkViewController.h"
 #import "UIImage+Utilities.h"
 #import "DkTDocumentsViewController.h"
+#import "DkTSegmentedController.h"
 
 @interface DkTPodTabBarController ()
 
@@ -38,19 +39,21 @@
     UITabBarItem *documentsItem = [[UITabBarItem alloc] initWithTitle:@"Documents" image:nil tag:0];
     [documentsItem setFinishedSelectedImage:[kDocumentsImage imageWithColor:[UIColor inactiveColor]] withFinishedUnselectedImage:[kDocumentsImage imageWithColor:[UIColor darkerTextColor]]];
     
-    UINavigationController *navCtr = [[UINavigationController alloc] initWithRootViewController:[[DkTSearchViewController alloc] init]];
-    [navCtr setNavigationBarHidden:YES];
-    navCtr.tabBarItem = searchItem;
+    
+    DkTSegmentedController *findController = [[DkTSegmentedController alloc] init];
+    findController.tabBarItem = searchItem;
+    
     
     DkTBookmarkViewController *bookmarkViewController = [[DkTBookmarkViewController alloc] init];
     bookmarkViewController.tabBarItem = bookmarkItem;
+    
     DkTDocumentsViewController *documentsViewController =[[DkTDocumentsViewController alloc] init];
     documentsViewController.tabBarItem = documentsItem;
     
     self.tabBar.tintColor = [UIColor activeColor];
     [self.tabBar addGestureRecognizer:[self longPress]];
     IOS7(self.tabBar.translucent = NO;, );
-    self.viewControllers = @[navCtr, bookmarkViewController, documentsViewController];
+    self.viewControllers = @[findController, bookmarkViewController, documentsViewController];
     
     
 }

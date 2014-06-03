@@ -10,8 +10,9 @@
 NSString* const DkTSettingsSecondaryClientEnabledKey = @"DkTSettingsSecondaryClientEnabledKey";
 NSString* const DkTSettingsAutoLoginKey = @"DkTSettingsAutoLoginKey";
 NSString* const DkTSettingsAddTOCKey = @"DkTSettingsTOCKey";
+NSString* const DkTSettingsCacheRecentKey = @"DkTSettingsCacheRecentKey";
 NSString* const DkTSettingsMostRecentKey = @"DkTSettingsMostRecentFirst";
-NSString* const DkTVersionNumber = @"1.0";
+NSString* const DkTVersionNumber = @"1.1";
 
 @implementation DkTSettings
 

@@ -8,6 +8,10 @@
 
 #import <Foundation/Foundation.h>
 
+@class DkTDocket;
+
 @interface DkTDocketPrinter : NSObject
+
++(void) printDocket:(DkTDocket *)docket entries:(NSArray *)entries toPath:(NSString *)path;
 
 @end

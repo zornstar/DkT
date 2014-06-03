@@ -7,7 +7,8 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "DkTBookmarkViewController.h"
 
-@interface DkTRecentDocketViewController : UIViewController
+@interface DkTRecentDocketViewController : DkTBookmarkViewController
 
 @end

@@ -19,19 +19,10 @@
     return self;
 }
 
-- (void)setSelected:(BOOL)selected animated:(BOOL)animated
-{
-    [super setSelected:selected animated:animated];
-
-}
-
 -(void) drawRect:(CGRect)rect
 {
     [super drawRect:rect];
-    
     [self setCornerRounding:self.cornerRounding];
-    
-    
 }
 
 -(void) setCornerRounding:(UIRectCorner)cornerRounding

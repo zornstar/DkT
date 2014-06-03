@@ -9,6 +9,7 @@
 extern NSString* const DkTSettingsSecondaryClientEnabledKey;
 extern NSString* const DkTSettingsAutoLoginKey;
 extern NSString* const DkTSettingsAddTOCKey;
+extern NSString* const DkTSettingsCacheRecentKey;
 extern NSString* const DkTSettingsMostRecentKey;
 extern NSString* const DkTVersionNumber;
 

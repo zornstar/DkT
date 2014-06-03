@@ -153,8 +153,8 @@
        
         download.parent.completedChildren++;
         
-        int completed = download.parent.completedChildren;
-        int total = download.parent.children.count;
+        NSInteger completed = download.parent.completedChildren;
+        NSUInteger total = download.parent.children.count;
 
         if(completed == total) [download.parent updateCompletionStatus];
         

@@ -151,21 +151,6 @@
     
 }
 
-+(NSString *)parseDocketSheet:(NSData *)html courtType:(PACERCourtType)type
-{
-    if(type == PACERCourtTypeCivil)
-    {
-        TFHpple *hpple = [TFHpple hppleWithHTMLData:html];
-        TFHppleElement *firstForm = [hpple peekAtSearchWithXPathQuery:@"//form"];
-        NSString *fullDocketReport = [firstForm objectForKey:@"action"];
-        NSRange rangeOfQMark = [fullDocketReport rangeOfString:@"?"];
-        NSString *fullDocketReportGetURLString = [fullDocketReport substringFromIndex:rangeOfQMark.location];
-        return fullDocketReportGetURLString;
-    }
-    
-    else return nil;
-}
-
 +(BOOL) parseLogin:(NSData *)html
 {
     NSString *stringData = [[NSString alloc] initWithData:html encoding:NSUTF8StringEncoding];
@@ -378,7 +363,8 @@
                 
                 else
                 {
-                    num = (linkElement.text.length > 0) ? [NSString stringWithFormat:@"%@",linkElement.text] : [NSString stringWithFormat:@"%@",[link lastPathComponent]];
+                    NSString *trimmedString = [linkElement.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+                    num = (trimmedString.length > 0) ? [NSString stringWithFormat:@"%@",linkElement.text] : [NSString stringWithFormat:@"%@",[link lastPathComponent]];
                 }
                 
                 
@@ -447,7 +433,7 @@
                 //Column 1 = date
                 entry.date = ((TFHppleElement *)[docket_cols objectAtIndex:col_num]).text;
                 
-                col_num++; //bankruptcy has 4 columns
+                col_num++;
                 
                 //Column 2 = link
                 TFHppleElement *link_col = [docket_cols objectAtIndex:col_num];
@@ -780,8 +766,29 @@
 
     }
     completion(docket.cs_caseid);
+   
+}
+
++(NSString *)parseDocketSheet:(NSData *)html courtType:(PACERCourtType)type
+{
+    if(type == PACERCourtTypeCivil)
+    {
+        TFHpple *hpple = [TFHpple hppleWithHTMLData:html];
+        TFHppleElement *firstForm = [hpple peekAtSearchWithXPathQuery:@"//form"];
+        NSString *fullDocketReport = [firstForm objectForKey:@"action"];
+        NSRange rangeOfQMark = [fullDocketReport rangeOfString:@"?"];
+        NSString *fullDocketReportGetURLString = [fullDocketReport substringFromIndex:rangeOfQMark.location];
+        return fullDocketReportGetURLString;
+    }
     
-    
+    else return nil;
+}
+
++(NSString *)parseMore:(NSData *)data docket:(DkTDocket *)docket {
+    TFHpple *hpple = [TFHpple hppleWithHTMLData:data];
+    TFHppleElement *firstForm = [hpple peekAtSearchWithXPathQuery:@"//form"];
+    NSString *fullDocketReport = [firstForm objectForKey:@"action"];
+    return [NSString stringWithFormat:@"%@cgi-bin/%@",docket.courtLink,fullDocketReport.lastPathComponent];
 }
 
 @end

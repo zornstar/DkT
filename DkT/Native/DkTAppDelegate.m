@@ -13,10 +13,24 @@
 #import "DkTSettings.h"
 #import <QuartzCore/QuartzCore.h>
 #import "UIImage+Utilities.h"
+#import "iRate.h"
 
 #define kDkTDateLastActiveKey @"DkTDateLastActive"
 
 @implementation DkTAppDelegate
+
++ (void)initialize
+{
+    //configure iRate
+    [iRate sharedInstance].daysUntilPrompt = 10;
+    [iRate sharedInstance].usesUntilPrompt = 10;
+    [iRate sharedInstance].applicationName = @"DkT";
+    [iRate sharedInstance].messageTitle = @"Rate Me!";
+    [iRate sharedInstance].rateButtonLabel = @"OK";
+    [iRate sharedInstance].cancelButtonLabel = @"Never";
+    [iRate sharedInstance].remindButtonLabel = @"Later";
+    [iRate sharedInstance].promptForNewVersionIfUserRated = YES;
+}
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
@@ -32,8 +46,6 @@
     [DkTDocumentManager clearTempFiles];
     self.window.rootViewController = self.viewController;
     [self.window makeKeyAndVisible];
-    
-    
     
     return YES;
 }
@@ -51,8 +63,13 @@
     [[UIToolbar appearance] setBackgroundImage:[[UIImage alloc] init] forToolbarPosition:UIToolbarPositionAny barMetrics:UIBarMetricsDefault];
     [[UIToolbar appearance] setBackgroundImage:[[UIImage alloc] init] forToolbarPosition:UIToolbarPositionAny barMetrics:UIBarMetricsLandscapePhone];
 
+    [[UISegmentedControl appearance] setTintColor:[UIColor activeColor]];
+    [[UISegmentedControl appearance] setTitleTextAttributes:@{UITextAttributeTextColor : [UIColor inactiveColor], UITextAttributeFont : [UIFont fontWithName:kMainFont size:10.]} forState:UIControlStateSelected];
+    [[UISegmentedControl appearance] setTitleTextAttributes:@{UITextAttributeTextColor : [UIColor darkerTextColor], UITextAttributeFont : [UIFont fontWithName:kMainFont size:10.]} forState:UIControlStateNormal];
+    
     IOS7([[UIBarButtonItem appearance] setBackButtonBackgroundImage:[[UIImage alloc] init]
           forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];, );
+    IOS7(, [[UISegmentedControl appearance] setSegmentedControlStyle:UISegmentedControlStyleBar];);
     
     [[DkTAlertView appearance] setCornerRadius:5.0];
     [[DkTAlertView appearance] setTitleFont:[UIFont fontWithName:kMainFont size:15.]];
@@ -134,6 +151,4 @@
 {
    
 }
-
-
 @end

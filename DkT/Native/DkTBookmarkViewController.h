@@ -8,12 +8,17 @@
 #import "PACERClient.h"
 
 
-@interface DkTBookmarkViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, DkTBookmarkManagerDelegate, PACERClientProtocol>
+@interface DkTBookmarkViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, DkTBookmarkManagerDelegate, PACERClientProtocol, UIGestureRecognizerDelegate>
 
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) DkTBookmarkManager *bookmarkManager;
-@property (nonatomic, strong, readonly) NSMutableArray *bookmarks;
+@property (nonatomic, strong) NSMutableArray *bookmarks;
+@property (nonatomic, strong) UILabel *noDocumentLabel;
 
 -(void) updateAllBookmarks;
+-(void) setup;
+
+-(void) handleSavedDocket:(DkTDocket *)docket entries:(NSArray *)entries;
+-(BOOL) connectivityStatus;
 
 @end
