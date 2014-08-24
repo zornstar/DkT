@@ -24,7 +24,6 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // add viewController so you can switch them later.
     UIViewController *vc = [self viewControllerForSegmentIndex:0];
     [self addChildViewController:vc];
     self.contentView = [[UIView alloc] initWithFrame:self.view.bounds];

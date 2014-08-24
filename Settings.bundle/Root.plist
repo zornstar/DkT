@@ -18,7 +18,7 @@
 			<key>Key</key>
 			<string>DkTVersionNumber</string>
 			<key>DefaultValue</key>
-			<string>1.0</string>
+			<string>1.23</string>
 		</dict>
 		<dict>
 			<key>Title</key>

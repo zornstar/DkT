@@ -83,9 +83,9 @@
         IOS7(_tableView.separatorInset = UIEdgeInsetsZero;,);
         _tableView.rowHeight = PAD_OR_POD(65, 52);
         CGRect frame;
-        frame.size.height = self.view.frame.size.height * (PAD_OR_POD(.7, .6)) + self.results.count * self.tableView.sectionHeaderHeight;
+        frame.size.height = self.view.frame.size.height * (PAD_OR_POD(.6, .7)) + self.results.count * self.tableView.sectionHeaderHeight;
         frame.size.width = self.view.frame.size.width*.85;
-        frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,.09*self.view.frame.size.height);
+        frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0, PAD_OR_POD(.07*self.view.frame.size.height, .1 * self.view.frame.size.height));
         _tableView.frame = frame;
         
         _tableView.dataSource = self;
@@ -358,8 +358,8 @@
         
         CGRect frame;
         frame.size.width = self.tableView.rowHeight*2.5;
-        frame.size.height = self.tableView.rowHeight*.75;
-        frame.origin = CGPointMake(self.tableView.center.x-frame.size.width/2., CGRectGetMaxY(self.tableView.frame)+self.tableView.frame.origin.y);
+        frame.size.height = self.tableView.rowHeight*.70;
+        frame.origin = CGPointMake(self.tableView.center.x-frame.size.width/2., CGRectGetMaxY(self.tableView.frame)+10);
         _backButton.frame = frame;
         [_backButton setIconSpacing:15.];
         _backButton.layer.cornerRadius = 5.0;

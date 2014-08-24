@@ -20,7 +20,7 @@
 #import "MBProgressHUD.h"
 #import "NSString+Utilities.h"
 
-#define kLoginURL @"https://pacer.login.uscourts.gov/cgi-bin/check-pacer-passwd.pl"
+#define kLoginURL @"https://pacer.login.uscourts.gov/csologin/login.jsf"
 #define kBaseURL @"https://pcl.uscourts.gov/"
 #define kSearchURL @"https://pcl.uscourts.gov/dquery"
 #define kAppellateDocumentURL @"https://ecf.%@.uscourts.gov/cmecf/servlet/TransportRoom?servlet=ShowDoc&incPdfHeader=Y&incPdfHeaderDisp=Y&dls_id=%@&caseId=%@&pacer=t&recp=%d"
@@ -139,39 +139,74 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
 }
 -(void) loginForSession:(DkTSession *)session sender:(UIViewController<PACERClientProtocol>*)sender
 {
+    for(id cookie in [NSHTTPCookieStorage sharedHTTPCookieStorage].cookies)
+        [[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:cookie];
     
     @try {
         
-        NSDictionary *params = @{@"loginid":session.user.username, @"passwd":session.user.password, @"client":session.client, @"faction":@"Login"};
+        DkTURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://pacer.login.uscourts.gov/csologin/login.jsf"]];
         
-        DkTURLRequest *request = [[self requestWithMethod:@"POST" path:kLoginURL parameters:params] mutableCopy];
-        [request setCachePolicy:NSURLCacheStorageNotAllowed];
-        AFHTTPRequestOperation *loginOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+        [request setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
         
+        AFHTTPRequestOperation *firstLogin = [[AFHTTPRequestOperation alloc] initWithRequest:request];
         
-        [loginOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-            
-            if([PACERParser parseLogin:responseObject])
-            {
-                [DkTSession setCurrentSession:session];
-                [[DkTSessionManager sharedManager] addSession:session];
-                [self setReceiptCookie];
-                _loggedIn = TRUE;
-                
-            }
-            
-            else _loggedIn = FALSE;
-            
-            if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:_loggedIn];
-            
-        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-            
-            if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:(_loggedIn = FALSE)];
+        [firstLogin setCacheResponseBlock:^NSCachedURLResponse *(NSURLConnection *connection, NSCachedURLResponse *cachedResponse) {
+            return nil;
         }];
         
-        [self enqueueHTTPRequestOperation:loginOperation];
-        
-        return;
+        [firstLogin setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+            
+            NSString *token = [PACERParser loginToken:responseObject];
+            
+            NSLog(@"TOKEN");
+            NSLog(@"%@", token);
+            
+            NSDictionary *params = @{
+                                     @"login":@"login",
+                                     @"login:loginName":session.user.username,
+                                     @"login:password":session.user.password,
+                                     @"login:clientCode":session.client,
+                                     token:@"",
+                                     @"javax.faces.ViewState":@"stateless"
+                                    };
+            
+            DkTURLRequest *request = [[self requestWithMethod:@"POST" path:@"https://pacer.login.uscourts.gov/csologin/login.jsf" parameters:params] mutableCopy];
+            
+            
+            [request setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
+            
+            AFHTTPRequestOperation *loginOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+            
+            
+            
+            [loginOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+               
+                if([PACERParser parseLogin:responseObject])
+                {
+                    [DkTSession setCurrentSession:session];
+                    [[DkTSessionManager sharedManager] addSession:session];
+                    [self setReceiptCookie];
+                    _loggedIn = TRUE;
+                    
+                }
+                
+                else _loggedIn = FALSE;
+                
+                if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:_loggedIn];
+                
+            } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                
+                if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:(_loggedIn = FALSE)];
+            }];
+            
+            [self enqueueHTTPRequestOperation:loginOperation];
+            
+            return;
+
+        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+            if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:(_loggedIn = FALSE)];
+        }];
+        [self enqueueHTTPRequestOperation:firstLogin];
         
     }
     

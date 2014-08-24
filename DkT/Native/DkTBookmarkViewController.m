@@ -176,8 +176,7 @@
     DkTDocket *item = [self.bookmarks objectAtIndex:index];
     [self.bookmarks removeObjectAtIndex:index];
     [self.bookmarkManager deleteBookmark:item];
-    
-    CGRect frame = self.tableView.frame; frame.size.height = self.tableView.rowHeight * self.bookmarks.count; self.tableView.frame = frame;
+    [self resizeTableViewForHeight];
     
     if(self.bookmarks.count > 0) [self.tableView reloadData];
     
@@ -194,6 +193,11 @@
 -(void) reload {
     [self loadBookmarks];
     self.noDocumentLabel.hidden = (self.bookmarks.count > 0);
+}
+
+-(void) resizeTableViewForHeight {
+    NSInteger maxRows = PAD_OR_POD(10, 7);
+    CGRect frame; frame.size.height = _tableView.rowHeight * MIN(self.bookmarks.count, maxRows); frame.size.width = self.view.frame.size.width*.85; frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,(self.view.frame.size.width -frame.size.width)/2.0); _tableView.frame = frame;
 }
 
 -(void) updateAllBookmarks
@@ -330,8 +334,7 @@
         _tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
         
         _tableView.rowHeight = PAD_OR_POD(65, 60);
-        
-        CGRect frame; frame.size.height = _tableView.rowHeight * self.bookmarks.count; frame.size.width = self.view.frame.size.width*.85; frame.origin = CGPointMake((self.view.frame.size.width -frame.size.width)/2.0,(self.view.frame.size.width -frame.size.width)/2.0); _tableView.frame = frame;
+        [self resizeTableViewForHeight];
         _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _tableView.dataSource = self;
         _tableView.delegate = self;
@@ -400,6 +403,10 @@
     {
         cell.cornerRadius = 5.0f;
         cell.cornerRounding = UIRectCornerBottomLeft | UIRectCornerBottomRight;
+    }
+    
+    else {
+        cell.cornerRadius = 0;
     }
     
     cell.imageView.image = [[DkTImageCache sharedCache] imageNamed:@"bookmark" color:[UIColor activeColor]];
@@ -488,8 +495,6 @@
     if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) [self menuForIndexPath:indexPath];
 }
 
--(UITableViewCellEditingStyle) tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath { return  UITableViewCellEditingStyleNone; }
-
 - (BOOL)tableView:(UITableView *)tableView shouldIndentWhileEditingRowAtIndexPath:(NSIndexPath *)indexPath {  return NO; }
 
 -(BOOL) tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath {return YES; }
@@ -573,7 +578,7 @@
 {
     [self.bookmarks insertObject:bookmarkedItem atIndex:0];
     [self.updating insertObject:@0 atIndex:0];
-    CGRect frame = self.tableView.frame; frame.size.height = self.tableView.rowHeight * self.bookmarks.count; self.tableView.frame = frame;
+    [self resizeTableViewForHeight];
     if(self.bookmarks.count > 0) self.noDocumentLabel.hidden = YES;
     [self.tableView reloadData];
 }

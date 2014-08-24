@@ -151,22 +151,26 @@
     
 }
 
+
++(NSString *) loginToken:(NSData *)html
+{
+    TFHpple *hpple = [[TFHpple alloc] initWithHTMLData:html];
+    NSArray *buttons = [hpple searchWithXPathQuery:@"//button"];
+   
+    for(TFHppleElement *button in buttons) {
+        if([[button objectForKey:@"id"] rangeOfString:@"login:j_"].location != NSNotFound) {
+           return [button objectForKey:@"id"];
+        }
+    }
+    return @"";
+}
+
 +(BOOL) parseLogin:(NSData *)html
 {
     NSString *stringData = [[NSString alloc] initWithData:html encoding:NSUTF8StringEncoding];
     
-    if ([stringData rangeOfString:@"Login Error"].location != NSNotFound) {
+    if ([stringData rangeOfString:@"login:password"].location != NSNotFound) {
         return FALSE;
-    }
-    
-    TFHpple *hpple = [TFHpple hppleWithHTMLData:html];
-    
-    NSArray *inputElements = [hpple searchWithXPathQuery:@"//input"];
-    
-    for(TFHppleElement *element in inputElements)
-    {
-        if([[element objectForKey:@"id"] isEqualToString:@"loginid"]) return FALSE;
-        if([[element objectForKey:@"name"] isEqualToString:@"login"]) return FALSE;
     }
     
     return TRUE;
@@ -239,6 +243,7 @@
                 DkTDocket *result = [[DkTDocket alloc] init];
                 TFHppleElement *e = [rows objectAtIndex:r];
                 
+                NSString *_name;
                 NSArray *children = [e childrenWithTagName:@"td"];
                 
                 for(int i = 0; i < children.count; ++i) {
@@ -258,9 +263,10 @@
                             TFHppleElement *aChild = [[child childrenWithTagName:@"a"] objectAtIndex:0];
                             result.link = [aChild objectForKey:@"href"];
                             result.case_num = aChild.text;
-                            result.name = [aChild objectForKey:@"title"];
+                            _name = [aChild objectForKey:@"title"];
                             
                         }
+                        if([str isEqualToString:@"cs_title"]) result.name = child.text;
                         
                         TFHppleElement *td1 = [children objectAtIndex:2];
                         NSArray *children = [td1 childrenWithTagName:@"a"];
@@ -286,6 +292,7 @@
                     
                 }
                 
+                if(result.name == nil) result.name = _name;
                 [self cleanName:result];
                 if([result isMinimallyValid])[itemsArray addObject:result];
                 

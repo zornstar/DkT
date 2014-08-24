@@ -147,6 +147,9 @@
     }
 }
 
+
+-(UITableViewCellEditingStyle) tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath { return  UITableViewCellEditingStyleNone; }
+
 -(void) showSavedDocket:(DkTDocket *)docket
 {
     NSArray *entries = [[DkTBookmarkManager sharedManager] savedDocket:docket];
@@ -156,6 +159,7 @@
 -(void) handleDocumentsFromDocket:(DkTDocket *)docket entry:(DkTDocketEntry *)entry entries:(NSArray *)entries {
     
 }
+
 
 -(void) handleDocket:(DkTDocket *)docket entries:(NSArray *)entries to:(NSString *)to from:(NSString *)from
 {

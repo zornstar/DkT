@@ -173,7 +173,21 @@ NSString * const kWriteableProperties[] = {
 }
 
 -(NSString *)tempFileName {
-    return [NSString stringWithFormat:@"%@&%@&%@", self.docket.court,[self.docket.name substringToIndex:3], self.fileName];
+    NSString *uid = @"";
+    
+    if(self.docket.name.length > 0) {
+        uid = [[uid stringByAppendingString:[self.docket.name substringToIndex:1]] stringByAppendingString:@"&"];
+    }
+    
+    if(self.docket.cs_caseid.length > 2) {
+        uid = [[uid stringByAppendingString:[self.docket.cs_caseid substringToIndex:3]] stringByAppendingString:@"&"];
+    }
+    
+    if(self.docket.court) {
+        uid = [uid stringByAppendingString:self.docket.court];
+    }
+    
+    return [uid stringByAppendingString:self.fileName];
 }
 
 -(NSString *)shortCourt

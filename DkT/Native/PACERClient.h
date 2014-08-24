@@ -52,15 +52,45 @@ typedef void (^PACERDocLinkBlock)(id entry, id link);
  */
 
 -(void) handleDocument:(DkTDocketEntry *)entry atPath:(NSString *)path;
+
+/**
+ handleDocument
+ - sends to the delegate a reference to a docket entry that is a sealed document */
+
 -(void) handleSealedDocument:(DkTDocketEntry *)entry;
+
+/**
+ handleDocketEntryError
+ - sends to the delegate a reference to a docket entry that is a docket entry error */
+
 -(void) handleDocketEntryError:(DkTDocketEntry *)entry;
+
+/**
+ handleDocketError
+ - sends to the delegate a reference to a docket where there is an error */
+
 -(void) handleDocketError:(DkTDocket *)docket;
+
+/**
+ handleLogin
+ - sends to the delegate a bool indicating success of a login */
+
 -(void) handleLogin:(BOOL)success;
+
+/**
+ handleDocumentsFromDocket
+ - sends to the delegate a reference to docket, entry, and entries corresponding to the docketEntry */
+
 -(void) handleDocumentsFromDocket:(DkTDocket *)docket entry:(DkTDocketEntry *)entry entries:(NSArray *)entries;
+
 -(void) handleDocLink:(DkTDocketEntry *)entry docLink:(NSString *)docLink;
 -(void) handleFailedConnection;
 -(void) didDownloadDocketEntry:(DkTDocketEntry *)entry atPath:(NSString *)path;
 -(void) didDownloadDocketEntry:(DkTDocketEntry *)entry atPath:(NSString *)path cost:(BOOL)paid;
+
+/**
+ handleDocumentsFromDocket
+ - sets cookie to disable receipt page */
 -(void) setReceiptCookie;
 
 @end

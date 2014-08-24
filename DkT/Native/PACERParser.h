@@ -10,17 +10,35 @@
 
 @interface PACERParser : NSObject
 
+/**
+ parseAppellateDocket
+ - parse an appellate docket, return an array of DkTDocketEntry */
+
 +(NSArray *)parseAppellateDocket:(DkTDocket *)docket html:(NSData *)html;
+
+/**
+ parseAppellateDocket
+ - parse an appellate multi-document entry, return an array of DkTAttachment (subclass of DkTDkTEntry) */
+
 +(NSArray *)parseAppellateMultiDoc:(DkTDocketEntry *)entry html:(NSData *)html;
+
+/**
+ parseForNextPage
+ - parse for next page on a pacer search results (i.e., next link), return link */
+
 +(NSString *)parseForNextPage:(NSData *)html;
+
+/**
+ parseForNextPage
+ - parse search result page into array of DkTDockets */
+
++(NSString *) loginToken:(NSData *)html;
 +(NSMutableArray *) parseSearchResults:(NSData *)html;
-//+(NSArray *)parseDocumentPage:(NSData *)html;
-//+(float) parseHtmlStringForCost:(NSString *)htmlString;
 +(NSString *) pdfURLForDownloadDocument:(NSData *)data;
 +(NSArray *) parseDocket:(DkTDocket *)docket html:(NSData *)data;
 +(NSString *)parseMore:(NSData *)data docket:(DkTDocket *)docket;
 +(NSString *)parseDocketSheet:(NSData *)html courtType:(PACERCourtType)type;
-+(BOOL) parseLogin:(NSData *)html; +(BOOL) isLoggedIn:(NSData *)html;
++ (BOOL) parseLogin:(NSData *)html; +(BOOL) isLoggedIn:(NSData *)html;
 +(NSArray *)parseMultiDoc:(DkTDocketEntry *)entry html:(NSData *)html;
 +(void) parseAppellateCaseSelectionPage:(NSData *)html withDocket:(DkTDocket *)docket completion:(void (^)(NSString *cs_caseid))completion;
 @end
