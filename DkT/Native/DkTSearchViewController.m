@@ -197,8 +197,7 @@ NSString* const CTCodeKey = @"code";
     }
     
     cell.contentView.attributedHelpText = [self.helpTexts objectAtIndex:indexPath.row];
-   
-    
+
     return cell;
 }
 

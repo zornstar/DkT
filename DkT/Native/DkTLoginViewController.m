@@ -152,7 +152,7 @@
                 if(session.user.username.length > 0)
                 {
                     _status = DkTLoggingIn;
-                   [[PACERClient sharedClient] loginForSession:session sender:self];
+                   [[PACERClient sharedClient] loginForCSOSession:session sender:self];
                 }
             }
             
@@ -312,7 +312,7 @@
                 {
                     MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
                     hud.color = [UIColor clearColor];
-                    [[PACERClient sharedClient] loginForSession:_selectedSession sender:self];
+                    [[PACERClient sharedClient] loginForCSOSession:_selectedSession sender:self];
                 }
             }
             else if(self.usernameField.text.length < 1)
@@ -349,7 +349,7 @@
                 DkTSession *session = [[DkTSession alloc] init];
                 session.user = newUser;
                 session.client = (self.clientField.text.length > 0) ? self.clientField.text : @"";
-                [[PACERClient sharedClient] loginForSession:session sender:self];
+                [[PACERClient sharedClient] loginForCSOSession:session sender:self];
                 MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
                 hud.color = [UIColor clearColor];
             }

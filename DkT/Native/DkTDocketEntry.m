@@ -72,7 +72,6 @@ NSString * const kWriteableProperties[] = {
 
 -(NSAttributedString *) renderSummary
 {
-    NSLog(@"%@", self.entryNumber);
     NSMutableAttributedString *returnStr = [[NSMutableAttributedString alloc] initWithString:@""];
     
     NSString *string = [self.summary stringByReplacingOccurrencesOfString:@"&amp;" withString:@"&"];
@@ -185,6 +184,7 @@ NSString * const kWriteableProperties[] = {
     
     if(self.docket.court) {
         uid = [uid stringByAppendingString:self.docket.court];
+        uid = [uid stringByAppendingString:@"&"];
     }
     
     return [uid stringByAppendingString:self.fileName];

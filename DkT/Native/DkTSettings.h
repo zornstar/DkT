@@ -12,6 +12,7 @@ extern NSString* const DkTSettingsAddTOCKey;
 extern NSString* const DkTSettingsCacheRecentKey;
 extern NSString* const DkTSettingsMostRecentKey;
 extern NSString* const DkTVersionNumber;
+extern NSString* const DkTSettingsPrintStampKey;
 
 @interface DkTSettings : NSObject
 

@@ -165,6 +165,19 @@
     return @"";
 }
 
++(NSString *) checkboxToken:(NSData *)html
+{
+    TFHpple *hpple = [[TFHpple alloc] initWithHTMLData:html];
+    NSArray *inputs = [hpple searchWithXPathQuery:@"//input"];
+    
+    for(TFHppleElement *input in inputs) {
+        if([[input objectForKey:@"type"] rangeOfString:@"checkbox"].location != NSNotFound) {
+            return [input objectForKey:@"name"];
+        }
+    }
+    return @"";
+}
+
 +(BOOL) parseLogin:(NSData *)html
 {
     NSString *stringData = [[NSString alloc] initWithData:html encoding:NSUTF8StringEncoding];

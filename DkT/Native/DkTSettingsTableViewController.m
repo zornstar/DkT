@@ -38,9 +38,9 @@
 
 -(void) setup
 {
-    self.controls = @[[self switchWithKey:DkTSettingsAutoLoginKey], [self switchWithKey:DkTSettingsAddTOCKey], [self switchWithKey:DkTSettingsMostRecentKey]];
-    self.names = @[@"Auto Login on\nStart Up", @"Print Table of Contents in Bundle", @"Most Recent Docket Entries First"];
-    self.descriptions = @[@"Automatically login as last user/client on startup", @"Add a Table of Contents and page numbers to docket bundles.", @"Display the most recent docket entries at the top of the docket list."];
+    self.controls = @[[self switchWithKey:DkTSettingsAutoLoginKey], [self switchWithKey:DkTSettingsAddTOCKey], [self switchWithKey:DkTSettingsMostRecentKey]/*, [self switchWithKey:DkTSettingsPrintStampKey]*/];
+    self.names = @[@"Auto Login on\nStart Up", @"Print Table of Contents in Bundle", @"Most Recent Docket Entries First"/*, @"Print Stamp on PDFs"*/];
+    self.descriptions = @[@"Automatically login as last user/client on startup", @"Add a Table of Contents and page numbers to docket bundles.", @"Display the most recent docket entries at the top of the docket list."/*, @"Print Stamps on PDFs"*/];
     self.contentView = self.tableView;
 }
 

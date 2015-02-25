@@ -9,7 +9,6 @@
 #import "PACERParser.h"
 #import "PACERClient.h"
 #import "DkTAlertView.h"
-
 #import "DkTSettings.h"
 #import "DkTSession.h"
 #import "DkTSessionManager.h"
@@ -19,7 +18,10 @@
 #import "AFDownloadRequestOperation.h"
 #import "MBProgressHUD.h"
 #import "NSString+Utilities.h"
+#import "SSNetworkInfo.h"
+#import "GDataXMLNode.h"
 
+#define kCSOLoginURL @"https://pacer.login.uscourts.gov/services/cso-session-rest"
 #define kLoginURL @"https://pacer.login.uscourts.gov/csologin/login.jsf"
 #define kBaseURL @"https://pcl.uscourts.gov/"
 #define kSearchURL @"https://pcl.uscourts.gov/dquery"
@@ -137,14 +139,88 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
     
     else return TRUE;
 }
--(void) loginForSession:(DkTSession *)session sender:(UIViewController<PACERClientProtocol>*)sender
-{
+
+-(void) loginForCSOSession:(DkTSession *)session sender:(UIViewController<PACERClientProtocol>*)sender {
+    
     for(id cookie in [NSHTTPCookieStorage sharedHTTPCookieStorage].cookies)
         [[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:cookie];
     
     @try {
         
-        DkTURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://pacer.login.uscourts.gov/csologin/login.jsf"]];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:kCSOLoginURL]];
+    NSString * str = [NSString stringWithFormat:@"<CsoAuth><loginId>%@</loginId><password>%@</password><userIpAddress>%@</userIpAddress></CsoAuth>", session.user.username, session.user.password, [SSNetworkInfo currentIPAddress]];
+    [request setHTTPMethod:@"POST"];
+    [request setValue:@"application/xml; charset=utf-8" forHTTPHeaderField:@"Content-Type"];
+    [request setHTTPBody:[str dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    AFHTTPRequestOperation *searchOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+    
+    [request setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
+    
+    [searchOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+        GDataXMLDocument *doc = [[GDataXMLDocument alloc] initWithData:responseObject options:0 error:nil];
+        NSLog(@"%@", [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding]);
+        if([doc.rootElement elementsForName:@"loginResult"].count > 0 && [[[[doc.rootElement elementsForName:@"loginResult"] firstObject] stringValue] isEqualToString:@"0"]) {
+            _loggedIn = TRUE;
+            
+            NSMutableArray *cookies = [NSMutableArray array];
+            
+            NSString *token = [[[doc.rootElement elementsForName:@"nextGenCSO"] firstObject] stringValue];
+            if(session.client.length > 0) {
+                [cookies addObject:[self cookieWithName:@"PACERClientCode" andValue:session.client]];
+                
+            }
+            [cookies addObject:[self cookieWithName:@"NextGenCSO" andValue:token]];
+            [cookies addObject:[self cookieWithName:@"PacerSession" andValue:token]];
+            [cookies addObject:[self cookieWithName:@"BALANCEID" andValue:@"balancer.172.16.1.155"]];
+            [DkTSession setCurrentSession:session];
+            [[DkTSessionManager sharedManager] addSession:session];
+            
+            
+            for(NSHTTPCookie *cookie in cookies) {
+                [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:cookie];
+            }
+            
+            [self setReceiptCookie];
+            
+            
+        } else _loggedIn = FALSE;
+        
+        if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:_loggedIn];
+        
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:(_loggedIn = FALSE)];
+    }];
+    
+    [self enqueueHTTPRequestOperation:searchOperation];
+    
+    }
+    @catch (NSException *exception) {
+        
+        if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:(_loggedIn = FALSE)];
+        
+    }
+    @finally {
+        
+    }
+
+}
+
+//DEPRECATED
+-(void) loginForSession:(DkTSession *)session sender:(UIViewController<PACERClientProtocol>*)sender
+{
+    
+    for(id cookie in [NSHTTPCookieStorage sharedHTTPCookieStorage].cookies)
+        [[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:cookie];
+    
+    NSHTTPCookie *cookie = [NSHTTPCookie cookieWithProperties:@{@"BALANCEID":NSHTTPCookieName,@"balancer.172.16.1.155":NSHTTPCookieValue}];
+    
+    [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:cookie];
+    [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookieAcceptPolicy:NSHTTPCookieAcceptPolicyAlways];
+    
+    @try {
+        
+        DkTURLRequest *request = [DkTURLRequest requestWithURL:[NSURL URLWithString:kLoginURL]];
         
         [request setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
         
@@ -158,9 +234,6 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
             
             NSString *token = [PACERParser loginToken:responseObject];
             
-            NSLog(@"TOKEN");
-            NSLog(@"%@", token);
-            
             NSDictionary *params = @{
                                      @"login":@"login",
                                      @"login:loginName":session.user.username,
@@ -171,28 +244,58 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                                     };
             
             DkTURLRequest *request = [[self requestWithMethod:@"POST" path:@"https://pacer.login.uscourts.gov/csologin/login.jsf" parameters:params] mutableCopy];
-            
-            
             [request setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
             
             AFHTTPRequestOperation *loginOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
             
-            
-            
             [loginOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-               
-                if([PACERParser parseLogin:responseObject])
+                
+                if([operation.response.allHeaderFields[@"Pragma"] containsString:@"revalidate"]) {
+                    
+                    NSString *checkboxToken = [PACERParser checkboxToken:responseObject];
+                    
+                    
+                    NSDictionary *cparams = @{
+                                             @"regmsg":@"regmsg",
+                                             checkboxToken:@"on",
+                                             @"regmsg:bpmConfirm":@"",
+                                             @"javax.faces.ViewState":@"stateless"
+                                             };
+                    DkTURLRequest *checkboxRequest = [[self requestWithMethod:@"POST" path:@"https://pacer.login.uscourts.gov/csologin/login.jsf" parameters:cparams] mutableCopy];
+                    [checkboxRequest setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
+                    
+                    AFHTTPRequestOperation *checkboxOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+                    
+                    [checkboxOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+                        
+                        [DkTSession setCurrentSession:session];
+                        [[DkTSessionManager sharedManager] addSession:session];
+                        [self setReceiptCookie];
+                        _loggedIn = TRUE;
+                        
+                        if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:_loggedIn];
+                        
+                    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                        
+                        if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:(_loggedIn = FALSE)];
+                    }];
+                    
+                    [self enqueueHTTPRequestOperation:checkboxOperation];
+                }
+                
+                else if([PACERParser parseLogin:responseObject])
                 {
                     [DkTSession setCurrentSession:session];
                     [[DkTSessionManager sharedManager] addSession:session];
                     [self setReceiptCookie];
                     _loggedIn = TRUE;
                     
+                    if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:_loggedIn];
+                } else {
+                    _loggedIn = FALSE;
+                    if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:_loggedIn];
                 }
                 
-                else _loggedIn = FALSE;
-                
-                if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:_loggedIn];
                 
             } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
                 
@@ -207,6 +310,8 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
             if([sender respondsToSelector:@selector(handleLogin:)]) [sender handleLogin:(_loggedIn = FALSE)];
         }];
         [self enqueueHTTPRequestOperation:firstLogin];
+        
+        
         
     }
     
@@ -223,7 +328,8 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
 
 -(void) executeSearch:(NSDictionary *)searchParams sender:(UIViewController<PACERClientProtocol>*)sender
 {
-    if([self checkNetworkStatusWithAlert:YES])
+    NSLog(@"%@", [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies].description);
+     if([self checkNetworkStatusWithAlert:YES])
     {
         NSDictionary *params = [NSDictionary dictionaryWithDictionary:searchParams];
         
@@ -237,8 +343,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         {
             
             [searchOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-                
-                
+                NSLog(@"%@", [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding]);
                 NSArray *results = [PACERParser parseSearchResults:responseObject];
                 NSString * nextPage = [PACERParser parseForNextPage:responseObject];
                 
@@ -285,7 +390,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
     
         __block NSString *requestString = [docket.link stringByReplacingOccurrencesOfString:@"iqquerymenu" withString:@"DktRpt"];
     
-        DkTURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
+        DkTURLRequest *urlRequest = [DkTURLRequest requestWithURL:[NSURL URLWithString:requestString]];
             
         AFHTTPRequestOperation *queryDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest];
         
@@ -323,7 +428,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
                 if([str rangeOfString:@"The report may take a long time to run because this case has many docket entries."].location != NSNotFound) {
                     
                     NSString *url3 = [PACERParser parseMore:responseObject docket:docket];
-                    DkTURLRequest *urlRequest3 = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url3]];
+                    DkTURLRequest *urlRequest3 = [DkTURLRequest requestWithURL:[NSURL URLWithString:url3]];
                     [urlRequest3 setHTTPMethod:@"POST"];
                     NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
                     [urlRequest3 addValue:contentType forHTTPHeaderField:@"Content-Type"];
@@ -400,7 +505,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         if([sender respondsToSelector:@selector(handleDocketError:)]) [sender handleDocketError:docket];
     };
     
-    DkTURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
+    DkTURLRequest *urlRequest = [DkTURLRequest requestWithURL:[NSURL URLWithString:requestString]];
     
     AFHTTPRequestOperation *queryDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest];
     
@@ -410,7 +515,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         NSString *baseString = [requestString substringToIndex:[requestString rangeOfString:@"?"].location];
         NSString *requestString = [baseString stringByAppendingString:docketLink];
        
-        DkTURLRequest *urlRequest2 = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
+        DkTURLRequest *urlRequest2 = [DkTURLRequest requestWithURL:[NSURL URLWithString:requestString]];
         
         [urlRequest2 setHTTPMethod:@"POST"];
         NSString *boundary = [[NSString randomStringWithLength:10] stringByAppendingString:@"-----"];
@@ -566,7 +671,6 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
         
         if(responseString)
         {
-            NSLog(@"%@",responseString);
             if([responseString rangeOfString:@"Documents" options:NSCaseInsensitiveSearch].location != NSNotFound) {
                 //handle multidocument
                 
@@ -639,14 +743,14 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
     
     NSString *path = [entry link];
     
-    DkTURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:path]];
+    DkTURLRequest *request = [DkTURLRequest requestWithURL:[NSURL URLWithString:path]];
     [request setHTTPMethod:@"POST"];
     NSString *urlenc = [entry urlEncodedParams];
     urlenc = (urlenc.length > 0) ? [urlenc stringByAppendingString:@"&got_receipt=1"] : @"got_receipt=1";
+    urlenc = [urlenc stringByAppendingString:@"&pdf_header=1"];
     NSData *form = [urlenc dataUsingEncoding:NSUTF8StringEncoding];
     [request setHTTPBody:form];
     
-   
     AFHTTPRequestOperation *getDocument = [[AFHTTPRequestOperation alloc] initWithRequest:request];
   
     [getDocument setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
@@ -767,8 +871,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
      if(docket.cs_caseid.length == 0) {
         
         urlString = [urlString stringByAppendingString:[NSString stringWithFormat:@"?servlet=CaseSelectionTable.jsp&csnum1=%@&csnum2=%@&aName=&searchPty=pty", docket.case_num, docket.case_num]];
-         NSLog(@"%@",urlString);
-        DkTURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+        DkTURLRequest *request = [DkTURLRequest requestWithURL:[NSURL URLWithString:urlString]];
         [request setHTTPMethod:@"GET"];
         AFHTTPRequestOperation *queryDocketOperation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
         
@@ -822,18 +925,15 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
 }
 
 
--(NSHTTPCookie *) receiptCookie
-{
+-(NSHTTPCookie *) cookieWithName:(NSString *)name andValue:(NSString *)value {
     NSMutableDictionary *cookieDict = [NSMutableDictionary dictionary];
-    [cookieDict setObject:@"PacerPref" forKey:NSHTTPCookieName];
-    
-    NSString *receipt = @"receipt=N";
-    [cookieDict setObject:receipt forKey:NSHTTPCookieValue];
+    [cookieDict setObject:name forKey:NSHTTPCookieName];
+    [cookieDict setObject:value forKey:NSHTTPCookieValue];
     [cookieDict setObject:@"/" forKey:NSHTTPCookiePath];
-    [cookieDict setObject:@".uscourts.gov" forKey:NSHTTPCookieOriginURL];
+    [cookieDict setObject:@".uscourts.gov" forKey:NSHTTPCookieDomain];
     [cookieDict setObject:@"TRUE" forKey:NSHTTPCookieSecure];
-    
-    return [NSHTTPCookie cookieWithProperties:cookieDict];
+    NSHTTPCookie *cookie = [NSHTTPCookie cookieWithProperties:cookieDict];
+    return cookie;
 }
 
 -(NSData *) appellateDocumentParams:(NSString *)boundary docID:(NSString *)docID caseNum:(NSString *)caseNum
@@ -896,7 +996,7 @@ NSString *const AppellateParams = @"incPdfMulti=Y&incDktEntries=Y&dateFrom=&date
 
 -(void) setReceiptCookie
 {
-    [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:[self receiptCookie]];
+    [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:[self cookieWithName:@"PacerPref" andValue:@"receipt=N"]];
 }
 
 @end

@@ -45,7 +45,9 @@ NSString* const DkTHelpFileName = @"Help";
         sharedInstance = [[DkTDocumentManager alloc] init];
         sharedInstance.delegate = nil;
         NSMutableArray *dockets = [[NSMutableArray alloc] initWithContentsOfFile:[DkTDocumentManager metadataFilePath]];
+        
         sharedInstance.dockets = dockets;
+
         if(sharedInstance.dockets == nil)
         {
             sharedInstance.dockets = [NSMutableArray array];
@@ -53,6 +55,41 @@ NSString* const DkTHelpFileName = @"Help";
     });
     
     return sharedInstance;
+}
+
+- (void) validate {
+    
+    BOOL didChange = NO;
+    
+    NSInteger docketCount = self.dockets.count;
+    
+    for(NSInteger j = 0; j < docketCount; ++j) {
+        
+        NSDictionary *docket = self.dockets[j];
+        NSMutableArray *files = docket[@"files"];
+        NSInteger fileCount = files.count;
+        
+        for(NSInteger i = 0; i < fileCount; ++i) {
+            NSDictionary *file = files[i];
+            NSString *filePath = file[@"path"];
+            if(![[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+                [files removeObject:file];
+                --fileCount;
+                didChange = YES;
+                if(files.count == 0) {
+                    [self.dockets removeObject:docket];
+                    --docketCount;
+                }
+            }
+        }
+    }
+    
+    if(didChange) {
+        [self sync];
+        self.dockets = [[NSMutableArray alloc] initWithContentsOfFile:[DkTDocumentManager metadataFilePath]];
+    }
+    
+    
 }
 +(void) setDelegate:(id<DkTDocumentManagerDelegate>)delegate
 {

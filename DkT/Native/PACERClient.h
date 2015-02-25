@@ -104,10 +104,12 @@ typedef void (^PACERDocLinkBlock)(id entry, id link);
 -(NSString *) pacerDateString:(NSDate *)date;
 
 -(void) executeSearch:(NSDictionary *)searchParams sender:(DkTSearchViewController *)sender;
--(void) loginForSession:(DkTSession *)session sender:(id<PACERClientProtocol>)sender;
+-(void) loginForSession:(DkTSession *)session sender:(id<PACERClientProtocol>)sender; //deprecated
 -(void) retrieveDocket:(DkTDocket *)docket sender:(id<PACERClientProtocol>)sender;
 -(void) retrieveDocket:(DkTDocket *)docket sender:(id<PACERClientProtocol>)sender to:(NSString *)to from:(NSString *)from;
 -(void) retrieveDocument:(DkTDocketEntry *)entry sender:(id<PACERClientProtocol>)sender docket:(DkTDocket *)docket;
+-(void) loginForCSOSession:(DkTSession *)session sender:(UIViewController<PACERClientProtocol>*)sender;
+
 //-(void) retrieveDocument:(DkTDocketEntry *)entry docket:(DkTDocket *)docket completion:(PACERDocumentDownloadBlock)completion;
 
 @property (nonatomic, getter = isLoggedIn) BOOL loggedIn;

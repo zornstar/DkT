@@ -32,6 +32,8 @@
  parseForNextPage
  - parse search result page into array of DkTDockets */
 
+
++(NSString *) checkboxToken:(NSData *)html;
 +(NSString *) loginToken:(NSData *)html;
 +(NSMutableArray *) parseSearchResults:(NSData *)html;
 +(NSString *) pdfURLForDownloadDocument:(NSData *)data;

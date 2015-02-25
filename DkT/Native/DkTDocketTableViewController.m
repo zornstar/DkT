@@ -861,7 +861,7 @@ typedef enum {
     self.searchBar.delegate = self;
     //self.searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
 
-    if([[[[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."] objectAtIndex:0] intValue] != 7)
+    if([[[[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."] objectAtIndex:0] intValue] < 7)
     {
         [[self.searchBar.subviews objectAtIndex:0] removeFromSuperview];
         self.searchBar.backgroundColor = [UIColor lightGrayColor];

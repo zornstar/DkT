@@ -79,8 +79,6 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
     [self resizeTableView];
 }
 
-
-
 -(void) scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {
     [[UIMenuController sharedMenuController] setMenuVisible:NO animated:YES];
@@ -106,9 +104,6 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
     
     self.tableView.frame = CGRectInset(self.view.frame, 15, 15);
 }
-
-
-
 
 -(void) zipIndexPath:(NSIndexPath*)indexPath
 {
@@ -418,7 +413,10 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
         }
    
         DkTFile *file = [[sectionDictionary objectForKey:DkTFileDocketFilesKey] objectAtIndex:indexPath.row - 1];
-        cell.textLabel.text = [[[file objectForKey:DkTFilePathKey] lastPathComponent] stringByDeletingPathExtension];
+        NSString *n = [[file objectForKey:DkTFilePathKey] lastPathComponent];
+        n = [n componentsSeparatedByString:@"#"].lastObject;
+        NSString *name = [NSString stringWithFormat:@"Entry %@", n];
+        cell.textLabel.text = name;
         cell.detailTextLabel.text = [file objectForKey:DkTFileSummaryKey];
     
         cell.backgroundView = [[UIView alloc] init];
@@ -527,61 +525,42 @@ typedef enum {DkTDocumentOperationBundling = -1, DkTDocumentOperationNone = 0, D
 
         BOOL collapsed = [[sectionDictionary objectForKey:DkTFileDocketCollapsedKey] boolValue];
         
-       // NSMutableArray *paths = [NSMutableArray array];
-        
         [sectionDictionary setObject:[NSNumber numberWithBool:!collapsed] forKey:DkTFileDocketCollapsedKey];
-            
-        /*
-         NSInteger fileCount = [[sectionDictionary objectForKey:DkTFileDocketFilesKey] count];
-            
-        for(int i = 1; i <= fileCount; ++i)
-        {
-            [paths addObject:[NSIndexPath indexPathForRow:i inSection:indexPath.section]];
-        }*/
-        
-        /*
-        CGRect frame = self.tableView.frame;
-        CGFloat delta = (collapsed*2 - 1) * fileCount * self.tableView.rowHeight;
-        frame.size.height += delta;
-        frame.size.height = MAX(self.dockets.count*self.tableView.rowHeight, frame.size.height);
-        frame.size.height = MIN(self.view.frame.size.height-self.tableView.frame.origin.y-(PAD_OR_POD(100, 60)), frame.size.height);*/
-    
-       // if(delta <= 0) [CATransaction setCompletionBlock:^{
-           // self.tableView.frame = frame;
-          //  [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionTop animated:YES];
-        //}];
-        
-      //[UIView animateWithDuration:.2 delay:0.0 options:UIViewAnimationOptionBeginFromCurrentState animations:^{
-          
-         // self.tableView.frame = frame;
-          /*
-          if(collapsed)
-              [tableView insertRowsAtIndexPaths:paths withRowAnimation:UITableViewRowAnimationNone];
-          
-          else
-              [tableView deleteRowsAtIndexPaths:paths withRowAnimation:UITableViewRowAnimationNone];
-          
-          */
         [tableView reloadData];
         [self resizeTableView];
-        
-          
-   //  } completion:^(BOOL finished) {
-          
-   //   }];
-    
+ 
         
     }
     
     else
     {
-        
         DkTFile *file = [[sectionDictionary objectForKey:DkTFileDocketFilesKey] objectAtIndex:indexPath.row - 1];
-        ReaderDocument *document = [[ReaderDocument alloc] initWithFilePath:[file objectForKey:DkTFilePathKey] password:nil];
+        NSString *filePath = [file objectForKey:DkTFilePathKey];
+        NSString *docketPath = [DkTDocumentManager pathToDocket:[sectionDictionary objectForKey:DkTFileDocketNameKey]];
+        NSString *path = [docketPath stringByAppendingPathComponent:filePath.lastPathComponent];
+        ReaderDocument *document = [[ReaderDocument alloc] initWithFilePath:path password:nil];
+        
+        if(!document) {
+            
+            [[DkTDocumentManager sharedManager] removeFile:file];
+            self.dockets = [[DkTDocumentManager sharedManager] dockets];
+            [self.tableView reloadData];
+            
+            self.noDocumentLabel.hidden = (self.dockets.count > 0);
+            
+            DkTAlertView *alertView = [[DkTAlertView alloc] initWithTitle:@"Error" andMessage:@"Error locating document."];
+            [alertView addButtonWithTitle:@"OK" type:SIAlertViewButtonTypeDefault handler:^(SIAlertView *alertView) {
+                [alertView dismissAnimated:YES];
+            }];
+            
+            [alertView show];
+            return;
+        }
+        
         ReaderViewController *documentViewController = [[ReaderViewController alloc] initWithReaderDocument:document];
         
         DkTDetailViewController *detailViewController = [[DkTDetailViewController alloc] init];
-        detailViewController.title = [[[file objectForKey:DkTFilePathKey] lastPathComponent] stringByDeletingPathExtension];
+        detailViewController.title = [NSString stringWithFormat:@"Entry %@", [file objectForKey:DkTFileEntryKey]];
         
         [detailViewController addChildViewController:documentViewController];
         [detailViewController.view addSubview:documentViewController.view];

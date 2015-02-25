@@ -34,7 +34,7 @@
     CGContextRef ctx = UIGraphicsGetCurrentContext();
     
     CGContextBeginPath(ctx);
-    CGContextAddArc(ctx, width, rect.size.height/2., arclength, -M_PI_2, M_PI_2, 0);
+    CGContextAddArc(ctx, width-1, rect.size.height/2., arclength, -M_PI_2, M_PI_2, 0);
     CGContextClosePath(ctx); // could be omitted
     CGContextSetFillColorWithColor(ctx, [[self.colors objectAtIndex:0] CGColor]);
     CGContextFillPath(ctx);
